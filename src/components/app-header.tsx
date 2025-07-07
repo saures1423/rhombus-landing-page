@@ -1,38 +1,53 @@
 import useOffSetTop from '@/hooks/use-off-set-top';
-import { useResponsive } from '@/hooks/use-responsive';
-import { DesktopNavMenu } from './desktop-nav-menu';
+
+import {
+	ArrowRight,
+	BarChart3,
+	Building2,
+	CreditCard,
+	Package,
+	Palette,
+	Shirt,
+	Smartphone,
+	Store,
+	Users,
+	Utensils,
+	Zap,
+} from 'lucide-react';
+import { DesktopNavMenu, ListItem } from './desktop-nav-menu';
 import { HeaderButtons } from './header-buttons';
 import { Logo } from './logo';
+import { MenuFeatureItem } from './menu-item';
 import { ScrollingBanner } from './scrolling-banner';
 
 const mainNavItems = [
-	{ label: 'BUSINESS CARDS', href: '#', content: 'BUSINESS CARDS' },
 	{
-		label: 'PRINT ADVERTISING AND OFFICE',
+		label: 'SOLUTIONS',
 		href: '#',
-		content: 'PRINT ADVERTISING AND OFFICE',
+		content: SolutionContent(),
 	},
 	{
-		label: 'SIGNS, BANNERS AND POSTERS',
+		label: 'FEATURES',
 		href: '#',
-		content: 'SIGNS, BANNERS AND POSTERS',
+		content: FeaturesContent(),
+	},
+	{
+		label: 'PRICING',
+		href: '/pricing',
+		content: null,
 	},
 ];
 
 export function AppHeader() {
-	const isMdUp = useResponsive('up', 'xl');
-
 	const isoffset = useOffSetTop(40);
 
 	return (
 		<header
-			className={`top-0 z-50 w-full overflow-hidden ${
-				isoffset
-					? 'sticky bg-white/90 shadow-lg backdrop-blur dark:bg-gray-900/90'
-					: 'relative bg-white dark:bg-gray-900'
+			className={`top-0 w-full z-50 bg-white ${
+				isoffset ? 'sticky shadow-lg backdrop-blur ' : 'relative'
 			}`}
 		>
-			<div className="w-full border-b border-gray-200 dark:border-gray-800">
+			<div className="border-gray-200 dark:border-gray-800 border-b w-full">
 				<div
 					className={`transition-all duration-300 ease-in-out ${
 						isoffset
@@ -47,20 +62,118 @@ export function AppHeader() {
 				</div>
 
 				<nav
-					className="flex items-center justify-between gap-4 py-4 xl:container xl:mx-auto"
-					aria-label="Main navigation"
+					className="flex justify-between items-center gap-4 xl:mx-auto md:px-5 md:py-4 xl:container"
+					aria-label="navigation"
 				>
-					<div className="flex w-full flex-wrap items-center justify-between gap-y-5 p-4 sm:flex-row lg:p-2">
+					<div className="flex sm:flex-row flex-wrap justify-between items-center gap-y-5 p-4 lg:p-2 w-full">
 						<Logo />
 
-						{!isMdUp && <HeaderButtons />}
+						<div className="flex justify-center items-center gap-x-6">
+							<DesktopNavMenu items={mainNavItems} />
 
-						<DesktopNavMenu items={mainNavItems} />
-
-						{isMdUp && <HeaderButtons />}
+							<HeaderButtons />
+						</div>
 					</div>
 				</nav>
 			</div>
 		</header>
+	);
+}
+
+function FeaturesContent() {
+	return (
+		<div className="flex flex-col p-2 w-80">
+			<ul className="space-y-3">
+				<MenuFeatureItem
+					icon={<Zap className="w-5 h-5 text-emerald-600" />}
+					title="Store Builder"
+					description="Drag-and-drop builder with professional templates"
+					href="/features/#store-builder"
+				/>
+				<MenuFeatureItem
+					icon={<CreditCard className="w-5 h-5 text-emerald-600" />}
+					title="Payment Processing"
+					description="Accept 100+ payment methods securely"
+					href="/features/#payment-processing"
+				/>
+				<MenuFeatureItem
+					icon={<Package className="w-5 h-5 text-emerald-600" />}
+					title="Inventory Management"
+					description="Manage stock levels and suppliers easily"
+					href="/features/#inventory-management"
+				/>
+				<MenuFeatureItem
+					icon={<BarChart3 className="w-5 h-5 text-emerald-600" />}
+					title="Analytics & Reports"
+					description="Track performance with detailed insights"
+					href="/features/#analytics-reporting"
+				/>
+			</ul>
+
+			<div className="mt-4 px-2 pt-4 border-t">
+				<ListItem href="/features">
+					<div className="flex justify-between items-center font-medium text-emerald-600 hover:text-emerald-700 text-sm transition-colors">
+						View all features
+						<ArrowRight className="w-4 h-4" />
+					</div>
+				</ListItem>
+			</div>
+		</div>
+	);
+}
+
+function SolutionContent() {
+	return (
+		<div className="flex flex-col p-2 w-[40rem]">
+			<ul className="flex space-y-6">
+				<li>
+					<h4 className="mb-3 font-semibold text-gray-900">By Business Type</h4>
+					<ul className="space-y-3">
+						<MenuFeatureItem
+							icon={<Store className="w-4 h-4 text-emerald-600" />}
+							title="Small Business"
+							description="Perfect for startups and growing businesses"
+							href="/"
+						/>
+						<MenuFeatureItem
+							icon={<Building2 className="w-4 h-4 text-emerald-600" />}
+							title="Enterprise"
+							description="Scalable solutions for large organizations"
+							href="/"
+						/>
+						<MenuFeatureItem
+							icon={<Users className="w-4 h-4 text-emerald-600" />}
+							title="Multi-vendor"
+							description="Marketplace solutions for multiple sellers"
+							href="/"
+						/>
+					</ul>
+				</li>
+
+				<li>
+					<h4 className="mb-3 font-semibold text-gray-900">By Industry</h4>
+					<ul className="space-y-3">
+						<MenuFeatureItem
+							icon={<Shirt className="w-4 h-4 text-emerald-600" />}
+							title="Fashion & Apparel"
+							description="Specialized tools for clothing brands"
+							href="/"
+						/>
+						<MenuFeatureItem
+							icon={<Utensils className="w-4 h-4 text-emerald-600" />}
+							title="Food & Beverage"
+							description="Solutions for restaurants and food delivery"
+							href="/"
+						/>
+						<MenuFeatureItem
+							icon={<Palette className="w-4 h-4 text-emerald-600" />}
+							title="Art & Crafts"
+							description="Perfect for creative entrepreneurs"
+							href="/"
+						/>
+					</ul>
+				</li>
+			</ul>
+		</div>
 	);
 }

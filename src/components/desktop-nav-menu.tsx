@@ -1,35 +1,65 @@
 import {
-    NavigationMenu,
-    NavigationMenuContent,
-    NavigationMenuItem,
-    NavigationMenuLink,
-    NavigationMenuList,
-    NavigationMenuTrigger,
+	NavigationMenu,
+	NavigationMenuContent,
+	NavigationMenuItem,
+	NavigationMenuLink,
+	NavigationMenuList,
+	NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
+import { Link } from '@tanstack/react-router';
 
 interface NavItem {
-    label: string;
-    href: string;
-    content: string;
+	label: string;
+	href: string;
+	content: React.ReactNode;
 }
 
 export function DesktopNavMenu({ items }: { items: NavItem[] }) {
-    return (
-        <div className="hidden grow justify-center lg:flex">
-            <NavigationMenu viewport={false}>
-                <NavigationMenuList>
-                    {items.map((item) => (
-                        <NavigationMenuItem key={item.label}>
-                            <NavigationMenuTrigger className="font-regular bg-transparent text-xs tracking-wide text-gray-500 hover:text-secondary dark:text-gray-200 dark:hover:text-white">
-                                {item.label}
-                            </NavigationMenuTrigger>
-                            <NavigationMenuContent className="bg-amber-400">
-                                <NavigationMenuLink href={item.href}>{item.content}</NavigationMenuLink>
-                            </NavigationMenuContent>
-                        </NavigationMenuItem>
-                    ))}
-                </NavigationMenuList>
-            </NavigationMenu>
-        </div>
-    );
+	return (
+		<div className="hidden lg:flex justify-center grow">
+			<NavigationMenu viewport={false}>
+				<NavigationMenuList>
+					{items.map((item) => (
+						<NavigationMenuItem key={item.label}>
+							{!item.content ? (
+								<NavigationMenuLink
+									asChild
+									className="bg-white hover:bg-transparent font-medium text-[13px] text-gray-700 hover:text-secondary dark:hover:text-white dark:text-gray-200 tracking-wide"
+								>
+									<Link to={item.href}>{item.label}</Link>
+								</NavigationMenuLink>
+							) : (
+								<>
+									<NavigationMenuTrigger className="bg-white hover:bg-transparent font-regular text-[13px] text-gray-700 hover:text-secondary dark:hover:text-white dark:text-gray-200 tracking-wide">
+										{item.label}
+									</NavigationMenuTrigger>
+									<NavigationMenuContent className="top-full left-0 z-50 absolute">
+										{item.content}
+									</NavigationMenuContent>
+								</>
+							)}
+						</NavigationMenuItem>
+					))}
+				</NavigationMenuList>
+			</NavigationMenu>
+		</div>
+	);
+}
+
+export function ListItem({
+	children,
+	href,
+	...props
+}: React.ComponentPropsWithoutRef<'li'> & { href: string }) {
+	return (
+		<li {...props}>
+			<NavigationMenuLink asChild>
+				<Link to={href}>
+					<p className="text-muted-foreground text-sm line-clamp-2 leading-snug">
+						{children}
+					</p>
+				</Link>
+			</NavigationMenuLink>
+		</li>
+	);
 }

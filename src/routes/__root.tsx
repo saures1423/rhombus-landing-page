@@ -2,6 +2,7 @@ import { Outlet, createRootRouteWithContext } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 
 import { AppHeader } from '@/components/app-header';
+import { FooterSection } from '@/sections/landing';
 import type { QueryClient } from '@tanstack/react-query';
 import { HeadContent } from '@tanstack/react-router';
 import TanStackQueryLayout from '../integrations/tanstack-query/layout';
@@ -16,14 +17,13 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function Root() {
 	return (
-		<div className="bg-red-500 text-[#1b1b18] dark:bg-[#0a0a0a]">
+		<div className="flex-1">
 			<HeadContent />
 			<AppHeader />
-
 			<Outlet />
+			<FooterSection />
 
 			<TanStackRouterDevtools />
-
 			<TanStackQueryLayout />
 		</div>
 	);
