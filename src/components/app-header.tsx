@@ -8,7 +8,6 @@ import {
 	Package,
 	Palette,
 	Shirt,
-	Smartphone,
 	Store,
 	Users,
 	Utensils,
