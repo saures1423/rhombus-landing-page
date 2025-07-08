@@ -1,8 +1,8 @@
 import { Outlet, createRootRouteWithContext } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 
+import AppFooter from '@/components/app-footer';
 import { AppHeader } from '@/components/app-header';
-import { FooterSection } from '@/sections/landing';
 import type { QueryClient } from '@tanstack/react-query';
 import { HeadContent } from '@tanstack/react-router';
 import TanStackQueryLayout from '../integrations/tanstack-query/layout';
@@ -19,9 +19,9 @@ function Root() {
 	return (
 		<div className="flex-1">
 			<HeadContent />
-			<AppHeader />
+			{/* <AppHeader /> */}
 			<Outlet />
-			<FooterSection />
+			{/* <AppFooter /> */}
 
 			<TanStackRouterDevtools />
 			<TanStackQueryLayout />

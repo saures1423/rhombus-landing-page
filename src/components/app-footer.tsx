@@ -3,7 +3,7 @@
 import { Link } from '@tanstack/react-router';
 import { Printer } from 'lucide-react';
 
-export default function FooterSection() {
+export default function AppFooter() {
 	return (
 		<footer className="mx-auto mt-10 border-t w-full container">
 			<div className="px-4 md:px-0 py-8 md:py-12">
@@ -112,7 +112,7 @@ export default function FooterSection() {
 				</div>
 				<div className="flex md:flex-row flex-col justify-between items-center gap-4 mt-8 pt-8 border-t">
 					<p className="text-muted-foreground text-sm">
-						© 2025 Rhombus Ecommerce. All rights reserved.
+						© 2025 Rhombus X. All rights reserved.
 					</p>
 					<div className="flex gap-4">
 						<Link

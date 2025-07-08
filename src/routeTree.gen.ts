@@ -9,26 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as PricingIndexRouteImport } from './routes/pricing/index'
-import { Route as FeaturesIndexRouteImport } from './routes/features/index'
+import { Route as LandingRouteImport } from './routes/_landing'
+import { Route as LandingIndexRouteImport } from './routes/_landing/index'
 import { Route as AuthSigninRouteImport } from './routes/auth/signin'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
+import { Route as LandingPricingRouteImport } from './routes/_landing/pricing'
+import { Route as LandingFeaturesRouteImport } from './routes/_landing/features'
 
-const IndexRoute = IndexRouteImport.update({
+const LandingRoute = LandingRouteImport.update({
+  id: '/_landing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LandingIndexRoute = LandingIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PricingIndexRoute = PricingIndexRouteImport.update({
-  id: '/pricing/',
-  path: '/pricing/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FeaturesIndexRoute = FeaturesIndexRouteImport.update({
-  id: '/features/',
-  path: '/features/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => LandingRoute,
 } as any)
 const AuthSigninRoute = AuthSigninRouteImport.update({
   id: '/auth/signin',
@@ -40,78 +35,81 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LandingPricingRoute = LandingPricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => LandingRoute,
+} as any)
+const LandingFeaturesRoute = LandingFeaturesRouteImport.update({
+  id: '/features',
+  path: '/features',
+  getParentRoute: () => LandingRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/features': typeof LandingFeaturesRoute
+  '/pricing': typeof LandingPricingRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/signin': typeof AuthSigninRoute
-  '/features': typeof FeaturesIndexRoute
-  '/pricing': typeof PricingIndexRoute
+  '/': typeof LandingIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/features': typeof LandingFeaturesRoute
+  '/pricing': typeof LandingPricingRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/signin': typeof AuthSigninRoute
-  '/features': typeof FeaturesIndexRoute
-  '/pricing': typeof PricingIndexRoute
+  '/': typeof LandingIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_landing': typeof LandingRouteWithChildren
+  '/_landing/features': typeof LandingFeaturesRoute
+  '/_landing/pricing': typeof LandingPricingRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/signin': typeof AuthSigninRoute
-  '/features/': typeof FeaturesIndexRoute
-  '/pricing/': typeof PricingIndexRoute
+  '/_landing/': typeof LandingIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/auth/forgot-password'
-    | '/auth/signin'
     | '/features'
     | '/pricing'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth/forgot-password' | '/auth/signin' | '/features' | '/pricing'
-  id:
-    | '__root__'
-    | '/'
     | '/auth/forgot-password'
     | '/auth/signin'
-    | '/features/'
-    | '/pricing/'
+    | '/'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/features' | '/pricing' | '/auth/forgot-password' | '/auth/signin' | '/'
+  id:
+    | '__root__'
+    | '/_landing'
+    | '/_landing/features'
+    | '/_landing/pricing'
+    | '/auth/forgot-password'
+    | '/auth/signin'
+    | '/_landing/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  LandingRoute: typeof LandingRouteWithChildren
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthSigninRoute: typeof AuthSigninRoute
-  FeaturesIndexRoute: typeof FeaturesIndexRoute
-  PricingIndexRoute: typeof PricingIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_landing': {
+      id: '/_landing'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof LandingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_landing/': {
+      id: '/_landing/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pricing/': {
-      id: '/pricing/'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof PricingIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/features/': {
-      id: '/features/'
-      path: '/features'
-      fullPath: '/features'
-      preLoaderRoute: typeof FeaturesIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof LandingIndexRouteImport
+      parentRoute: typeof LandingRoute
     }
     '/auth/signin': {
       id: '/auth/signin'
@@ -127,15 +125,42 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_landing/pricing': {
+      id: '/_landing/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof LandingPricingRouteImport
+      parentRoute: typeof LandingRoute
+    }
+    '/_landing/features': {
+      id: '/_landing/features'
+      path: '/features'
+      fullPath: '/features'
+      preLoaderRoute: typeof LandingFeaturesRouteImport
+      parentRoute: typeof LandingRoute
+    }
   }
 }
 
+interface LandingRouteChildren {
+  LandingFeaturesRoute: typeof LandingFeaturesRoute
+  LandingPricingRoute: typeof LandingPricingRoute
+  LandingIndexRoute: typeof LandingIndexRoute
+}
+
+const LandingRouteChildren: LandingRouteChildren = {
+  LandingFeaturesRoute: LandingFeaturesRoute,
+  LandingPricingRoute: LandingPricingRoute,
+  LandingIndexRoute: LandingIndexRoute,
+}
+
+const LandingRouteWithChildren =
+  LandingRoute._addFileChildren(LandingRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  LandingRoute: LandingRouteWithChildren,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthSigninRoute: AuthSigninRoute,
-  FeaturesIndexRoute: FeaturesIndexRoute,
-  PricingIndexRoute: PricingIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

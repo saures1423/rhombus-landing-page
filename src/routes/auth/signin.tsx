@@ -13,14 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import {
-	ArrowRight,
-	Chrome,
-	Eye,
-	EyeOff,
-	Lock,
-	Mail,
-} from 'lucide-react';
+import { ArrowRight, Chrome, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { useState } from 'react';
 
 export const Route = createFileRoute('/auth/signin')({
@@ -37,14 +30,13 @@ function SigninComponent() {
 		e.preventDefault();
 		// Handle sign in logic here
 		console.log('Sign in:', { email, password, rememberMe });
-	}
+	};
 
 	return (
-		<div className="flex justify-center items- pt-10 bg-gradient-to-br from-emerald-50 to-teal-50 p-4 h-screen">
+		<div className="flex justify-center items-center bg-gradient-to-br from-emerald-50 to-teal-50 p-4 pt-10 h-screen">
 			<div className="w-full max-w-md">
 				{/* Header */}
 				<div className="mb-8 text-center">
-	
 					<h1 className="font-bold text-gray-900 text-2xl">Welcome back</h1>
 					<p className="mt-2 text-gray-600">
 						Sign in to your account to continue
@@ -62,14 +54,13 @@ function SigninComponent() {
 						{/* Social Sign In */}
 						<div className="space-y-3">
 							<Button
-								variant='outline'
+								variant="outline"
 								className="bg-transparent w-full"
-								type='button'
+								type="button"
 							>
 								<Chrome className="mr-2 w-4 h-4" />
 								Continue with Google
 							</Button>
-				
 						</div>
 
 						<div className="relative">
@@ -90,12 +81,12 @@ function SigninComponent() {
 								<div className="relative">
 									<Mail className="top-3 left-3 absolute w-4 h-4 text-gray-400" />
 									<Input
-										id='email'
-										type='email'
+										id="email"
+										type="email"
 										placeholder="Enter your email"
 										value={email}
 										onChange={(e) => setEmail(e.target.value)}
-										className='pl-10'
+										className="pl-10"
 										required
 									/>
 								</div>
@@ -106,23 +97,23 @@ function SigninComponent() {
 								<div className="relative">
 									<Lock className="top-3 left-3 absolute w-4 h-4 text-gray-400" />
 									<Input
-										id='password'
+										id="password"
 										type={showPassword ? 'text' : 'password'}
 										placeholder="Enter your password"
 										value={password}
 										onChange={(e) => setPassword(e.target.value)}
-										className='pr-10 pl-10'
+										className="pr-10 pl-10"
 										required
 									/>
 									<button
-										type='button'
+										type="button"
 										onClick={() => setShowPassword(!showPassword)}
 										className="top-3 right-3 absolute text-gray-400 hover:text-gray-600"
 									>
 										{showPassword ? (
-											<EyeOff className='w-4 h-4' />
+											<EyeOff className="w-4 h-4" />
 										) : (
-											<Eye className='w-4 h-4' />
+											<Eye className="w-4 h-4" />
 										)}
 									</button>
 								</div>
@@ -131,7 +122,7 @@ function SigninComponent() {
 							<div className="flex justify-between items-center">
 								<div className="flex items-center space-x-2">
 									<Checkbox
-										id='remember'
+										id="remember"
 										checked={rememberMe}
 										onCheckedChange={(checked) =>
 											setRememberMe(checked as boolean)
@@ -142,7 +133,7 @@ function SigninComponent() {
 									</Label>
 								</div>
 								<Link
-									to='/'
+									to="/"
 									className="text-emerald-600 hover:text-emerald-700 text-sm"
 								>
 									Forgot password?
@@ -150,9 +141,9 @@ function SigninComponent() {
 							</div>
 
 							<Button
-								type='submit'
+								type="submit"
 								className="bg-emerald-600 hover:bg-emerald-700 w-full"
-								size='lg'
+								size="lg"
 							>
 								Sign In
 								<ArrowRight className="ml-2 w-4 h-4" />
@@ -162,7 +153,7 @@ function SigninComponent() {
 						<div className="text-gray-600 text-sm text-center">
 							Don't have an account?{' '}
 							<Link
-								to='/'
+								to="/"
 								className="font-medium text-emerald-600 hover:text-emerald-700"
 							>
 								Start free trial
@@ -172,5 +163,5 @@ function SigninComponent() {
 				</Card>
 			</div>
 		</div>
-	)
+	);
 }
