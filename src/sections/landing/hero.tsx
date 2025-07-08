@@ -101,7 +101,7 @@ export default function HeroSection() {
 										<div className="bg-green-400 rounded-full w-3 h-3" />
 									</div>
 									<div className="flex-1 bg-white ml-4 px-3 py-1 rounded-md text-gray-500 text-xs">
-										your-store.commerceflow.com
+										dashboard.rhomubus.com
 									</div>
 								</div>
 
