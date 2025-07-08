@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LandingRouteImport } from './routes/_landing'
 import { Route as LandingIndexRouteImport } from './routes/_landing/index'
+import { Route as AuthStartTrialRouteImport } from './routes/auth/start-trial'
 import { Route as AuthSigninRouteImport } from './routes/auth/signin'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as LandingPricingRouteImport } from './routes/_landing/pricing'
@@ -24,6 +25,11 @@ const LandingIndexRoute = LandingIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => LandingRoute,
+} as any)
+const AuthStartTrialRoute = AuthStartTrialRouteImport.update({
+  id: '/auth/start-trial',
+  path: '/auth/start-trial',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthSigninRoute = AuthSigninRouteImport.update({
   id: '/auth/signin',
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof LandingPricingRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/signin': typeof AuthSigninRoute
+  '/auth/start-trial': typeof AuthStartTrialRoute
   '/': typeof LandingIndexRoute
 }
 export interface FileRoutesByTo {
@@ -58,6 +65,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof LandingPricingRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/signin': typeof AuthSigninRoute
+  '/auth/start-trial': typeof AuthStartTrialRoute
   '/': typeof LandingIndexRoute
 }
 export interface FileRoutesById {
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   '/_landing/pricing': typeof LandingPricingRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/signin': typeof AuthSigninRoute
+  '/auth/start-trial': typeof AuthStartTrialRoute
   '/_landing/': typeof LandingIndexRoute
 }
 export interface FileRouteTypes {
@@ -76,9 +85,16 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/auth/forgot-password'
     | '/auth/signin'
+    | '/auth/start-trial'
     | '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/features' | '/pricing' | '/auth/forgot-password' | '/auth/signin' | '/'
+  to:
+    | '/features'
+    | '/pricing'
+    | '/auth/forgot-password'
+    | '/auth/signin'
+    | '/auth/start-trial'
+    | '/'
   id:
     | '__root__'
     | '/_landing'
@@ -86,6 +102,7 @@ export interface FileRouteTypes {
     | '/_landing/pricing'
     | '/auth/forgot-password'
     | '/auth/signin'
+    | '/auth/start-trial'
     | '/_landing/'
   fileRoutesById: FileRoutesById
 }
@@ -93,6 +110,7 @@ export interface RootRouteChildren {
   LandingRoute: typeof LandingRouteWithChildren
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthSigninRoute: typeof AuthSigninRoute
+  AuthStartTrialRoute: typeof AuthStartTrialRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -110,6 +128,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof LandingIndexRouteImport
       parentRoute: typeof LandingRoute
+    }
+    '/auth/start-trial': {
+      id: '/auth/start-trial'
+      path: '/auth/start-trial'
+      fullPath: '/auth/start-trial'
+      preLoaderRoute: typeof AuthStartTrialRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth/signin': {
       id: '/auth/signin'
@@ -161,6 +186,7 @@ const rootRouteChildren: RootRouteChildren = {
   LandingRoute: LandingRouteWithChildren,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthSigninRoute: AuthSigninRoute,
+  AuthStartTrialRoute: AuthStartTrialRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

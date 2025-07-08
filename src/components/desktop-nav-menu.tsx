@@ -28,8 +28,8 @@ export function DesktopNavMenu({ items }: { items: NavItem[] }) {
 								>
 									<Link
 										to={item.href}
-										activeProps={{ className: 'text-primary font-bold' }}
-										// activeOptions={{ exact: true }}
+										activeProps={{ className: 'text-emerald-600 font-bold' }}
+										activeOptions={{ exact: true }}
 									>
 										{item.label}
 									</Link>
@@ -56,20 +56,23 @@ export function ListItem({
 	children,
 	href,
 	...props
-}: React.ComponentPropsWithoutRef<'li'> & { href: string }) {
+}: React.ComponentPropsWithoutRef<'li'> & {
+	href: string;
+	linkProps?: object;
+}) {
 	return (
-		<li {...props}>
-			<NavigationMenuLink asChild>
-				<Link
-					to={href}
-					activeProps={{ className: 'text-primary font-bold' }}
-					// activeOptions={{ exact: true }}
-				>
-					<p className="text-muted-foreground text-sm line-clamp-2 leading-snug">
+		<ul>
+			<li {...props}>
+				<NavigationMenuLink asChild>
+					<Link
+						to={href}
+						activeProps={{ className: 'text-emerald-600 font-bold' }}
+						activeOptions={{ exact: true }}
+					>
 						{children}
-					</p>
-				</Link>
-			</NavigationMenuLink>
-		</li>
+					</Link>
+				</NavigationMenuLink>
+			</li>
+		</ul>
 	);
 }

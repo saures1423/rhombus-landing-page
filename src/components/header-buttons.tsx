@@ -15,9 +15,9 @@ export function HeaderButtons() {
 				</Button>
 				<Button
 					size="sm"
-					className="bg-emerald-600 hover:bg-emerald-700 cursor-pointer"
+					className="bg-emerald-600 hover:bg-emerald-700 cursor-pointer asChild"
 				>
-					Start Free Trial
+					<Link to="/auth/start-trial">Start Free Trial</Link>
 				</Button>
 			</div>
 		</div>

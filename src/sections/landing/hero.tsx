@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Link } from '@tanstack/react-router';
 import { ArrowRight, Check, Star, TrendingUp } from 'lucide-react';
 
 export default function HeroSection() {
@@ -43,15 +44,18 @@ export default function HeroSection() {
 						<div className="flex min-[400px]:flex-row flex-col gap-2">
 							<Button
 								size="lg"
-								className="bg-white hover:bg-emerald-50 font-semibold text-emerald-600"
+								className="bg-white hover:bg-emerald-50 font-semibold text-emerald-600 cursor-pointer"
+								asChild
 							>
-								Start Free Trial
-								<ArrowRight className="ml-2 w-4 h-4" />
+								<Link to="/auth/start-trial">
+									Start Free Trial
+									<ArrowRight className="ml-2 w-4 h-4" />
+								</Link>
 							</Button>
 							<Button
 								variant="outline"
 								size="lg"
-								className="bg-transparent hover:bg-white backdrop-blur-sm border-white text-white hover:text-emerald-600"
+								className="bg-transparent hover:bg-white backdrop-blur-sm border-white text-white hover:text-emerald-600 cursor-pointer"
 							>
 								Watch Demo
 							</Button>

@@ -14,7 +14,7 @@ import {
 	CardTitle,
 } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { createFileRoute } from '@tanstack/react-router';
+import { Link, createFileRoute } from '@tanstack/react-router';
 import {
 	ArrowRight,
 	Building2,
@@ -465,7 +465,7 @@ function PricingComponent() {
 								</h2>
 								<p className="max-w-[900px] text-gray-600 lg:text-base/relaxed md:text-xl/relaxed xl:text-xl/relaxed">
 									Don't just take our word for it. Here's what real customers
-									say about CommerceFlow.
+									say about Rhombus X.
 								</p>
 							</div>
 						</div>
@@ -560,17 +560,19 @@ function PricingComponent() {
 									Ready to Get Started?
 								</h2>
 								<p className="max-w-[600px] text-emerald-100 lg:text-base/relaxed md:text-xl/relaxed xl:text-xl/relaxed">
-									Join thousands of successful businesses using CommerceFlow.
-									Start your free trial today.
+									Join thousands of successful businesses using Rhombus X. Start
+									your free trial today.
 								</p>
 							</div>
 							<div className="flex min-[400px]:flex-row flex-col gap-2">
 								<Button
 									size="lg"
 									className="bg-white hover:bg-emerald-50 px-8 h-12 font-semibold text-emerald-600"
+									asChild
 								>
-									Start Free Trial
-									<ArrowRight className="ml-2 w-4 h-4" />
+									<Link to="/auth/start-trial">
+										Start Free Trial <ArrowRight className="ml-2 w-4 h-4" />
+									</Link>
 								</Button>
 								<Button
 									variant="outline"

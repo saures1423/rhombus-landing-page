@@ -34,8 +34,8 @@ export default function TestimonialSection() {
 						</CardHeader>
 						<CardContent>
 							<p className="mb-4 text-gray-600">
-								"CommerceFlow transformed our business. We went from idea to
-								$100k in revenue in just 6 months. The platform is incredibly
+								"Rhombus X transformed our business. We went from idea to $100k
+								in revenue in just 6 months. The platform is incredibly
 								intuitive."
 							</p>
 							<div className="flex items-center gap-3">

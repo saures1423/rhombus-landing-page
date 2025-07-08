@@ -82,32 +82,32 @@ export function AppHeader() {
 function FeaturesContent() {
 	return (
 		<div className="flex flex-col p-2 w-80">
-			<ul className="space-y-3">
+			<div className="space-y-3">
 				<MenuFeatureItem
 					icon={<Zap className="w-5 h-5 text-emerald-600" />}
 					title="Store Builder"
 					description="Drag-and-drop builder with professional templates"
-					href="/features/#store-builder"
+					href="/features?pageIndex=0"
 				/>
 				<MenuFeatureItem
 					icon={<CreditCard className="w-5 h-5 text-emerald-600" />}
 					title="Payment Processing"
 					description="Accept 100+ payment methods securely"
-					href="/features/#payment-processing"
+					href="/features?pageIndex=1"
 				/>
 				<MenuFeatureItem
 					icon={<Package className="w-5 h-5 text-emerald-600" />}
 					title="Inventory Management"
 					description="Manage stock levels and suppliers easily"
-					href="/features/#inventory-management"
+					href="/features?pageIndex=2"
 				/>
 				<MenuFeatureItem
 					icon={<BarChart3 className="w-5 h-5 text-emerald-600" />}
 					title="Analytics & Reports"
 					description="Track performance with detailed insights"
-					href="/features/#analytics-reporting"
+					href="/features?pageIndex=3"
 				/>
-			</ul>
+			</div>
 
 			<div className="mt-4 px-2 pt-4 border-t">
 				<ListItem href="/features">

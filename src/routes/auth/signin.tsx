@@ -17,7 +17,6 @@ import {
 	ArrowRight,
 	Eye,
 	EyeOff,
-	Github,
 	Lock,
 	Mail,
 	Shield,
@@ -265,12 +264,12 @@ function SigninComponent() {
 							<div className="space-y-3">
 								<Button
 									variant="outline"
-									className="bg-white hover:bg-gray-50 border-gray-200 w-full h-12"
+									className="bg-white hover:bg-gray-50 border-gray-200 w-full h-12 cursor-pointer"
 									type="button"
 								>
 									<div className="flex justify-center items-center gap-3">
 										<img
-											src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541"
+											src="/icons/google-96.png"
 											alt="Google"
 											width={20}
 											height={20}
@@ -281,11 +280,17 @@ function SigninComponent() {
 								</Button>
 								<Button
 									variant="outline"
-									className="bg-white hover:bg-gray-50 border-gray-200 w-full h-12"
+									className="bg-white hover:bg-gray-50 border-gray-200 w-full h-12 cursor-pointer"
 									type="button"
 								>
 									<div className="flex justify-center items-center gap-3">
-										<Github className="w-5 h-5" />
+										<img
+											src="/icons/github-60.png"
+											alt="Github"
+											width={20}
+											height={20}
+											className="rounded"
+										/>
 										<span className="font-medium">Continue with GitHub</span>
 									</div>
 								</Button>
@@ -397,7 +402,7 @@ function SigninComponent() {
 								<p className="text-gray-600 text-sm">
 									Don't have an account?{' '}
 									<Link
-										to="/"
+										to="/auth/start-trial"
 										className="font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
 									>
 										Start your free trial
