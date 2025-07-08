@@ -4,8 +4,8 @@ import { Printer } from 'lucide-react';
 function LogoIconText() {
 	return (
 		<>
-			<Printer className="h-6 w-6 text-secondary" />
-			<span className="text-xl font-bold text-secondary">Logo Here</span>
+			<Printer className="w-6 h-6 text-secondary" />
+			<span className="font-bold text-secondary text-xl">Rhombus X</span>
 		</>
 	);
 }

@@ -24,13 +24,19 @@ export function DesktopNavMenu({ items }: { items: NavItem[] }) {
 							{!item.content ? (
 								<NavigationMenuLink
 									asChild
-									className="bg-white hover:bg-transparent font-medium text-[13px] text-gray-700 hover:text-secondary dark:hover:text-white dark:text-gray-200 tracking-wide"
+									className="bg-white hover:bg-transparent font-medium text-gray-700 hover:text-secondary dark:hover:text-white dark:text-gray-200 text-sm tracking-wide"
 								>
-									<Link to={item.href}>{item.label}</Link>
+									<Link
+										to={item.href}
+										activeProps={{ className: 'text-primary font-bold' }}
+										// activeOptions={{ exact: true }}
+									>
+										{item.label}
+									</Link>
 								</NavigationMenuLink>
 							) : (
 								<>
-									<NavigationMenuTrigger className="bg-white hover:bg-transparent font-regular text-[13px] text-gray-700 hover:text-secondary dark:hover:text-white dark:text-gray-200 tracking-wide">
+									<NavigationMenuTrigger className="bg-white hover:bg-transparent font-regular text-gray-700 hover:text-secondary dark:hover:text-white dark:text-gray-200 text-sm tracking-wide">
 										{item.label}
 									</NavigationMenuTrigger>
 									<NavigationMenuContent className="top-full left-0 z-50 absolute">
@@ -54,7 +60,11 @@ export function ListItem({
 	return (
 		<li {...props}>
 			<NavigationMenuLink asChild>
-				<Link to={href}>
+				<Link
+					to={href}
+					activeProps={{ className: 'text-primary font-bold' }}
+					// activeOptions={{ exact: true }}
+				>
 					<p className="text-muted-foreground text-sm line-clamp-2 leading-snug">
 						{children}
 					</p>
