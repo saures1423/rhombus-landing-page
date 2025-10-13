@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 
 import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:5002');
+const socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5002');
 
 const Games = () => {
 	const [user, setUser] = useState<{
