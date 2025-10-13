@@ -67,6 +67,7 @@ const Games = () => {
 		result: null,
 	});
 	// Socket.io Event Handlers
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
 		// Connection events
 		socket.on('connect', () => {
@@ -214,6 +215,7 @@ const Games = () => {
 			{
 				id: Date.now().toString(),
 				game,
+				// biome-ignore lint/style/useNumberNamespace: <explanation>
 				profit: parseFloat(profit.toFixed(2)),
 				details,
 				time: new Date().toLocaleTimeString(),
@@ -434,7 +436,7 @@ const Games = () => {
 												onChange={(e) =>
 													setMinesGame((prev) => ({
 														...prev,
-														betAmount: parseFloat(e.target.value),
+														betAmount: Number.parseFloat(e.target.value),
 													}))
 												}
 												disabled={minesGame.isActive}
@@ -451,7 +453,7 @@ const Games = () => {
 												onChange={(e) =>
 													setMinesGame((prev) => ({
 														...prev,
-														minesCount: parseInt(e.target.value),
+														minesCount: Number.parseInt(e.target.value),
 													}))
 												}
 												disabled={minesGame.isActive}
