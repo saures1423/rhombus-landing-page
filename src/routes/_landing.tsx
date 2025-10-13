@@ -10,7 +10,7 @@ function LandingLayout() {
 	return (
 		<div className="bg-white min-h-screen">
 			{/* Landing Header */}
-			<AppHeader />
+			{/* <AppHeader /> */}
 
 			{/* Main Content */}
 			<main className="flex-1">
@@ -18,7 +18,7 @@ function LandingLayout() {
 			</main>
 
 			{/* Landing Footer */}
-			<AppFooter />
+			{/* <AppFooter /> */}
 		</div>
 	);
 }

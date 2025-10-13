@@ -5,6 +5,7 @@ import {
 	PricingSection,
 	TestimonialSection,
 } from '@/sections/landing';
+import Games from '@/sections/landing/games';
 import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_landing/')({
@@ -14,11 +15,11 @@ export const Route = createFileRoute('/_landing/')({
 function App() {
 	return (
 		<>
-			<HeroSection />
-			<FeatureSection />
+			<Games />
+			{/* <FeatureSection />
 			<TestimonialSection />
 			<CTASection />
-			<PricingSection />
+			<PricingSection /> */}
 		</>
 	);
 }
