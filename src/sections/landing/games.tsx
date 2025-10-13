@@ -344,7 +344,7 @@ const Games = () => {
 									onChange={(e) =>
 										setFormData((prev) => ({
 											...prev,
-											initialBalance: parseFloat(e.target.value),
+											initialBalance: Number.parseFloat(e.target.value),
 										}))
 									}
 									className="bg-gray-900 px-3 py-2 border border-gray-700 rounded w-full text-white"
@@ -543,7 +543,7 @@ const Games = () => {
 											onChange={(e) =>
 												setCoinflip((prev) => ({
 													...prev,
-													betAmount: parseFloat(e.target.value),
+													betAmount: Number.parseFloat(e.target.value),
 												}))
 											}
 											disabled={coinflip.isFlipping}
