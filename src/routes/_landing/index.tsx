@@ -1,10 +1,10 @@
-import {
-	CTASection,
-	FeatureSection,
-	HeroSection,
-	PricingSection,
-	TestimonialSection,
-} from '@/sections/landing';
+// import {
+// 	CTASection,
+// 	FeatureSection,
+// 	HeroSection,
+// 	PricingSection,
+// 	TestimonialSection,
+// } from '@/sections/landing';
 import Games from '@/sections/landing/games';
 import { createFileRoute } from '@tanstack/react-router';
 

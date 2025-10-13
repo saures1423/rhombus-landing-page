@@ -1,5 +1,5 @@
-import AppFooter from '@/components/app-footer';
-import { AppHeader } from '@/components/app-header';
+// import AppFooter from '@/components/app-footer';
+// import { AppHeader } from '@/components/app-header';
 import { Outlet, createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_landing')({
