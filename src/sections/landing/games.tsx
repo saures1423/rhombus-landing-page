@@ -3,6 +3,7 @@ import {
 	DollarSign,
 	Grid3x3,
 	History,
+	Shield,
 	User,
 	Users,
 	Wifi,
@@ -10,10 +11,22 @@ import {
 import { useEffect, useState } from 'react';
 
 import { io } from 'socket.io-client';
+import ProvablyFairModal from './provable-modal';
+import BetVerificationModal from './verify.model';
 
 const socketUrl = import.meta.env.VITE_SOCKET_URL;
 
-const socket = io(socketUrl || 'http://localhost:5002');
+const socket = io(`${socketUrl}/game`, {
+	auth: {
+		token:
+			'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ilc1ZGlybTVmR3dpQ3dDOUtPaEl4UGlKWDQ3YlpJMkk5M2RDaUxuMnUvekU9IiwidXNlcm5hbWUiOiJsZXMxNDIzIiwiaWF0IjoxNzYwNTIzNjUzLCJleHAiOjE3NjA5NTU2NTN9.qziUrFp1AET6kCeXBaVhZhxLuTOLrDz6CKTnEE0pMqmHMLUHiRfjXpXuhLpOrZL5VgBKKs5J3kCIhQFrWNaljw',
+		discordId: '1215664714206552145',
+	},
+	extraHeaders: {
+		apikey:
+			'sk_ceed97507cef15baa5ec0b9a64eb36f01cdbe6ed2d47a25558fdd712ef08903e',
+	},
+});
 
 const Games = () => {
 	const [user, setUser] = useState<{
@@ -31,6 +44,12 @@ const Games = () => {
 		username: '',
 		initialBalance: 1000,
 	});
+
+	const [showProvablyFair, setShowProvablyFair] = useState(false);
+	const [showBetVerification, setShowBetVerification] = useState(false);
+
+	const [selectedGame, setSelectedGame] = useState<any>(null);
+
 	// Mines State
 	const [minesGame, setMinesGame] = useState<{
 		gameId: string | null;
@@ -42,7 +61,6 @@ const Games = () => {
 		currentMultiplier: number;
 		isActive: boolean;
 		gameOver: boolean;
-		serverSeed: string | null;
 	}>({
 		gameId: null,
 		betAmount: 10,
@@ -53,7 +71,6 @@ const Games = () => {
 		currentMultiplier: 1,
 		isActive: false,
 		gameOver: false,
-		serverSeed: null,
 	});
 
 	// Coinflip State
@@ -74,7 +91,10 @@ const Games = () => {
 		// Connection events
 		socket.on('connect', () => {
 			setIsConnected(true);
-			socket.emit('auth', { userId: user?.id });
+			// socket.emit('auth:login', {
+			// 	tenantId: 'tenant_1760519620144_347f0a80',
+			// 	username: 'dasd',
+			// });
 		});
 
 		socket.on('disconnect', () => {
@@ -86,17 +106,16 @@ const Games = () => {
 
 			setUser(data.user);
 
-			socket.emit('history:get', { userId: data.user.id, limit: 50, skip: 0 });
+			socket.emit('game:history', { limit: 50, skip: 0 });
 		});
 
-		// Balance updates
 		socket.on('balance:update', (data: any) => {
 			setUser((prev) => {
-				if (!prev) return null; // handle null explicitly
+				if (!prev) return null;
 
 				return {
 					...prev,
-					balance: data.balance, // overwrite safely
+					balance: data.balance,
 				};
 			});
 		});
@@ -107,18 +126,17 @@ const Games = () => {
 		});
 
 		// History Games
-		socket.on('history:result', (data) => {
+		socket.on('game-history:result', (data) => {
 			if (!data?.history) return;
 
 			const formattedHistory = data.history.map((h: any) => ({
 				id: h._id,
-				game: h.gameType,
-				profit: h.profit,
 				details: {
 					betAmount: h.betAmount,
 					result: h.result,
 				},
 				time: new Date(h.createdAt).toLocaleTimeString(),
+				...h,
 			}));
 
 			setHistory(formattedHistory);
@@ -129,7 +147,6 @@ const Games = () => {
 			setMinesGame((prev) => ({
 				...prev,
 				gameId: data.gameId,
-				serverSeed: data.serverSeed,
 				isActive: true,
 				gameOver: false,
 				revealedTiles: [],
@@ -153,7 +170,14 @@ const Games = () => {
 				gameOver: true,
 				minePositions: data.minePositions,
 			}));
-			addToHistory('mines', data.profit, { result: 'Lost' });
+
+			addToHistory(
+				data.gameId,
+				'mines',
+				data.profit,
+				{ result: 'Lost' },
+				data.time,
+			);
 		});
 
 		socket.on('mines:cashedOut', (data: any) => {
@@ -163,31 +187,34 @@ const Games = () => {
 				gameOver: true,
 				minePositions: data.minePositions,
 			}));
-			addToHistory('mines', data.profit, {
-				result: 'Won',
-				multiplier: minesGame.currentMultiplier,
-			});
+			socket.emit('game:history', { limit: 50, skip: 0 });
+
+			addToHistory(
+				data.gameId,
+				'mines',
+				data.profit,
+				{ result: 'Win' },
+				data.time,
+			);
 		});
 
 		// Coinflip events
-		socket.on('coinflip:flipping', () => {
-			setCoinflip((prev) => ({ ...prev, isFlipping: true }));
+		socket.on('coinflip:flipping', (data) => {
+			setCoinflip((prev) => ({ ...prev, isFlipping: data.isFlipping }));
 		});
 
 		socket.on('coinflip:result', (data: any) => {
 			setCoinflip((prev) => ({
 				...prev,
-				isFlipping: false,
 				result: data.result,
 			}));
-			addToHistory('coinflip', data.profit, {
-				choice: coinflip.choice,
-				result: data.result,
-				won: data.won,
-			});
-			setTimeout(
-				() => setCoinflip((prev) => ({ ...prev, result: null })),
-				3000,
+
+			addToHistory(
+				data.gameId,
+				'coinflip',
+				data.profit,
+				{ result: 'Win' },
+				data.time,
 			);
 		});
 
@@ -199,7 +226,7 @@ const Games = () => {
 			socket.off('connect');
 			socket.off('disconnect');
 			socket.off('auth:success');
-			socket.off('history:result');
+			socket.off('game:history');
 			socket.off('balance:update');
 			socket.off('users:online');
 			socket.off('mines:started');
@@ -209,18 +236,26 @@ const Games = () => {
 			socket.off('coinflip:flipping');
 			socket.off('coinflip:result');
 			socket.off('error');
+			socket.off('mines:restored');
+			socket.off('check-unfinished-games');
 		};
 	}, [user, socket]);
 
-	const addToHistory = (game: string, profit: number, details: any) => {
+	const addToHistory = (
+		gameId: string,
+		gameType: string,
+		profit: number,
+		details: any,
+		time,
+	) => {
 		setHistory((prev) => [
 			{
-				id: Date.now().toString(),
-				game,
+				id: gameId,
+				gameType,
 				// biome-ignore lint/style/useNumberNamespace: <explanation>
 				profit: parseFloat(profit.toFixed(2)),
 				details,
-				time: new Date().toLocaleTimeString(),
+				time: new Date(time).toLocaleTimeString(),
 			},
 			...prev,
 		]);
@@ -241,6 +276,7 @@ const Games = () => {
 			userId: user.id,
 			betAmount: minesGame.betAmount,
 			minesCount: minesGame.minesCount,
+			gridSize: minesGame.gridSize,
 		});
 	};
 
@@ -268,7 +304,6 @@ const Games = () => {
 			return;
 		}
 		socket.emit('coinflip:play', {
-			userId: user.id,
 			betAmount: coinflip.betAmount,
 			choice: coinflip.choice,
 		});
@@ -369,6 +404,26 @@ const Games = () => {
 	return (
 		<div className="bg-gradient-to-br from-gray-900 via-blue-900/20 to-gray-900 p-4 min-h-screen text-white">
 			<div className="mx-auto max-w-6xl">
+				{showProvablyFair && (
+					<ProvablyFairModal
+						isOpen={showProvablyFair}
+						onClose={() => setShowProvablyFair(false)}
+						user={user}
+						socket={socket}
+					/>
+				)}
+
+				{/* Bet Verification Modal */}
+				{showBetVerification && selectedGame && (
+					<BetVerificationModal
+						isOpen={showBetVerification}
+						bet={selectedGame}
+						socket={socket}
+						user={user}
+						onClose={() => setShowBetVerification(false)}
+					/>
+				)}
+
 				{/* Header */}
 				<div className="flex justify-between items-center bg-gray-800/50 backdrop-blur mb-6 p-4 border border-gray-700 rounded-lg">
 					<div className="flex items-center gap-4">
@@ -468,12 +523,41 @@ const Games = () => {
 												))}
 											</select>
 										</div>
+
+										<button
+											onClick={() => setShowProvablyFair(true)}
+											className="flex items-center gap-2 bg-green-600/20 hover:bg-green-600/30 px-4 py-2 border border-green-600 rounded-lg transition"
+										>
+											<Shield size={20} />
+											<span className="font-bold">Provably Fair</span>
+										</button>
+										<div>
+											<label className="block mb-2 text-gray-400 text-sm">
+												Grid Size
+											</label>
+											<select
+												value={minesGame.gridSize}
+												onChange={(e) =>
+													setMinesGame((prev) => ({
+														...prev,
+														gridSize: Number.parseInt(e.target.value),
+													}))
+												}
+												disabled={minesGame.isActive}
+												className="bg-gray-900/50 px-3 py-2 border border-gray-700 rounded w-full text-white"
+											>
+												<option value={9}>3x3</option>
+												<option value={16}>4x4</option>
+												<option value={25}>5x5</option>
+												<option value={36}>6x6</option>
+											</select>
+										</div>
 									</div>
 
 									{!minesGame.isActive ? (
 										<button
 											onClick={startMinesGame}
-											className="bg-green-600 hover:bg-green-700 py-3 rounded-lg w-full font-bold transition"
+											className="bg-green-600 hover:bg-green-700 py-3 rounded-lg w-full font-bold transition cursor-pointer"
 										>
 											Start Game
 										</button>
@@ -504,8 +588,13 @@ const Games = () => {
 									)}
 								</div>
 
-								<div className="gap-2 grid grid-cols-5">
-									{Array.from({ length: 25 }, (_, i) => {
+								<div
+									className="gap-2 grid"
+									style={{
+										gridTemplateColumns: `repeat(${Math.sqrt(minesGame.gridSize)}, minmax(0, 1fr))`,
+									}}
+								>
+									{Array.from({ length: minesGame.gridSize }, (_, i) => {
 										const isRevealed = minesGame.revealedTiles.includes(i);
 										const isMine = minesGame.minePositions.includes(i);
 										const showMine = minesGame.gameOver && isMine;
@@ -515,7 +604,7 @@ const Games = () => {
 												key={i}
 												onClick={() => revealTile(i)}
 												disabled={!minesGame.isActive || isRevealed}
-												className={`aspect-square rounded-lg font-bold text-lg transition-all ${
+												className={`cursor-pointer aspect-square rounded-lg font-bold text-lg transition-all ${
 													isRevealed && !isMine
 														? 'bg-green-600'
 														: showMine
@@ -626,24 +715,36 @@ const Games = () => {
 							<History size={20} />
 							<h3 className="font-bold">Recent Games</h3>
 						</div>
+
 						<div className="space-y-2 max-h-96 overflow-y-auto">
-							{history.map((item: any) => (
-								<div key={item.id} className="bg-gray-700/50 p-3 rounded">
-									<div className="flex justify-between items-center mb-1">
-										<span className="font-bold text-sm capitalize">
-											{item.game}
-										</span>
-										<span
-											className={`font-bold ${item.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}
-										>
-											{item.profit >= 0 ? '+' : ''}
-											{item.profit}
-										</span>
+							{history.length > 0 ? (
+								history.map((item: any) => (
+									// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+									<div
+										key={item.id}
+										className="bg-gray-700/50 hover:bg-gray-700 p-3 rounded transition cursor-pointer"
+										onClick={() => {
+											setSelectedGame(item);
+											setShowBetVerification(true);
+										}}
+									>
+										<div className="flex justify-between items-center mb-1">
+											<span className="font-bold text-sm capitalize">
+												{item.gameType}
+											</span>
+											<span
+												className={`font-bold ${
+													item.profit >= 0 ? 'text-green-400' : 'text-red-400'
+												}`}
+											>
+												{item.profit >= 0 ? '+' : ''}
+												{item.profit.toFixed(2)}
+											</span>
+										</div>
+										<div className="text-gray-400 text-xs">{item.time}</div>
 									</div>
-									<div className="text-gray-400 text-xs">{item.time}</div>
-								</div>
-							))}
-							{history.length === 0 && (
+								))
+							) : (
 								<div className="py-8 text-gray-500 text-center">
 									No games played yet
 								</div>
