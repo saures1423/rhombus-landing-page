@@ -79,11 +79,13 @@ const Games = () => {
 		choice: 'heads' | 'tails';
 		isFlipping: boolean;
 		result: string | null;
+		won: boolean;
 	}>({
 		betAmount: 10,
 		choice: 'heads',
 		isFlipping: false,
 		result: null,
+		won: false,
 	});
 	// Socket.io Event Handlers
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -207,6 +209,7 @@ const Games = () => {
 			setCoinflip((prev) => ({
 				...prev,
 				result: data.result,
+				won: data.won,
 			}));
 
 			addToHistory(
@@ -303,6 +306,7 @@ const Games = () => {
 			alert('Insufficient balance!');
 			return;
 		}
+
 		socket.emit('coinflip:play', {
 			betAmount: coinflip.betAmount,
 			choice: coinflip.choice,
@@ -686,19 +690,17 @@ const Games = () => {
 									</button>
 								</div>
 
-								{coinflip.result && (
+								{!coinflip.isFlipping && coinflip.result && (
 									<div
 										className={`p-6 rounded-lg text-center border-2 ${
-											coinflip.result === coinflip.choice
+											coinflip.won
 												? 'bg-green-600/20 border-green-400'
 												: 'bg-red-600/20 border-red-400'
 										}`}
 									>
 										<div className="mb-2 text-6xl animate-bounce">🪙</div>
 										<div className="font-bold text-2xl">
-											{coinflip.result === coinflip.choice
-												? 'YOU WIN!'
-												: 'YOU LOSE!'}
+											{coinflip.won ? 'YOU WIN!' : 'YOU LOSE!'}
 										</div>
 										<div className="text-lg">
 											Result: {coinflip.result.toUpperCase()}
