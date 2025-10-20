@@ -14,6 +14,11 @@ import { io } from 'socket.io-client';
 import ProvablyFairModal from './provable-modal';
 import BetVerificationModal from './verify.model';
 
+// const socketUrl =
+// 	process.env.NODE_ENV === 'production'
+// 		? 'https://housegames-backend-production.up.railway.app'
+// 		: 'http://localhost:5002';
+
 const socketUrl = import.meta.env.VITE_SOCKET_URL;
 
 const socket = io(`${socketUrl}/game`, {
@@ -23,9 +28,13 @@ const socket = io(`${socketUrl}/game`, {
 		discordId: '1215664714206552145',
 	},
 	extraHeaders: {
-		apikey:
+		'x-api-key':
 			'sk_ceed97507cef15baa5ec0b9a64eb36f01cdbe6ed2d47a25558fdd712ef08903e',
 	},
+	reconnection: true,
+	reconnectionDelay: 1000,
+	reconnectionDelayMax: 5000,
+	reconnectionAttempts: 5,
 });
 
 const Games = () => {
