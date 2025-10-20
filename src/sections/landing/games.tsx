@@ -432,7 +432,6 @@ const Games = () => {
 						isOpen={showBetVerification}
 						bet={selectedGame}
 						socket={socket}
-						user={user}
 						onClose={() => setShowBetVerification(false)}
 					/>
 				)}

@@ -4,14 +4,12 @@ import {
 	ChevronDown,
 	ChevronUp,
 	Copy,
-	Eye,
-	EyeOff,
 	Gem,
 	RefreshCw,
 	Shield,
 	X,
 } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const ProvablyFairModal = ({ isOpen, onClose, user, socket }) => {
 	const [seedInfo, setSeedInfo] = useState({

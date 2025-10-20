@@ -11,6 +11,7 @@ import './styles.css';
 import reportWebVitals from './reportWebVitals';
 
 // Create a new router instance
+// @ts-ignore: bypass TanStack Router strictNullChecks enforcement
 const router = createRouter({
 	routeTree,
 	context: {

@@ -1,18 +1,8 @@
-import {
-	Bomb,
-	Check,
-	ChevronDown,
-	ChevronUp,
-	Copy,
-	Gem,
-	Shield,
-	X,
-} from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import { Check, ChevronDown, ChevronUp, Copy, Shield, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-const BetVerificationModal = ({ isOpen, onClose, bet, socket, user }) => {
+const BetVerificationModal = ({ isOpen, onClose, bet, socket }) => {
 	const [isExpanded, setIsExpanded] = useState(false);
-	const [verificationStatus, setVerificationStatus] = useState(null);
 	const [isVerifying, setIsVerifying] = useState(false);
 	const [verificationResult, setVerificationResult] = useState(null);
 	const [showResultModal, setShowResultModal] = useState(false);
@@ -38,7 +28,7 @@ const BetVerificationModal = ({ isOpen, onClose, bet, socket, user }) => {
 
 			socket.on('seed:verificationResult', (result) => {
 				setVerificationResult(result);
-				setVerificationStatus(result.valid ? 'verified' : 'failed');
+
 				setIsVerifying(false);
 
 				setShowResultModal(true);
