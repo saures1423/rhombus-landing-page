@@ -39,8 +39,8 @@ const ProvablyFairModal = ({ isOpen, onClose, user, socket }) => {
 
 	useEffect(() => {
 		if (isOpen && user) {
-			socket.emit('seed:getInfo', { userId: user.id });
-			socket.emit('seed:getPrevious', { userId: user.id, limit: 10 });
+			socket.emit('seed:getInfo');
+			socket.emit('seed:getPrevious', { limit: 10 });
 
 			socket.on('seed:gamesList', (data) => {
 				setGamesForSeed(data.games);
