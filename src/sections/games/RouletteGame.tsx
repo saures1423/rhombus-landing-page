@@ -402,7 +402,7 @@ const RouletteGame = ({ user, socket, countdown }: RouletteGameProps) => {
 			</div>
 
 			{/* History Pills */}
-			{roulette.history.length > 0 && (
+			{/* {roulette.history.length > 0 && (
 				<div className="mt-6 pt-4 border-gray-700 border-t">
 					<div className="mb-3 font-bold text-black text-md uppercase tracking-wider">
 						Last 10 Results
@@ -423,7 +423,7 @@ const RouletteGame = ({ user, socket, countdown }: RouletteGameProps) => {
 						))}
 					</div>
 				</div>
-			)}
+			)} */}
 
 			{/* Betting Controls */}
 			<div className="space-y-4 bg-gray-800/50 backdrop-blur p-4 border border-gray-700 rounded-lg">
