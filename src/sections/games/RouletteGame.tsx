@@ -1,4 +1,3 @@
-import { RotateCw } from 'lucide-react';
 import { useState } from 'react';
 
 interface RouletteGameProps {
@@ -334,6 +333,12 @@ const RouletteGame = ({ user, socket, countdown }: RouletteGameProps) => {
 							}}
 						>
 							{[
+								...colorSequence,
+								...colorSequence,
+								...colorSequence,
+								...colorSequence,
+								...colorSequence,
+								...colorSequence,
 								...colorSequence,
 								...colorSequence,
 								...colorSequence,
