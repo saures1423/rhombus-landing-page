@@ -323,22 +323,6 @@ export const useRouletteCountdown = (socket: any) => {
 			});
 		});
 
-		/**
-		 * Handle game stopped
-		 */
-		socket.on('roulette:gameStopped', (data: any) => {
-			console.log('🛑 Game stopped:', data);
-
-			clearCountdown();
-			setCountdown({
-				timeLeft: 0,
-				phase: 'waiting',
-				endTime: null,
-				roundId: null,
-				betsCount: 0,
-			});
-		});
-
 		// Cleanup on unmount
 		return () => {
 			clearCountdown();
@@ -353,7 +337,6 @@ export const useRouletteCountdown = (socket: any) => {
 			socket.off('roulette:rolling');
 			socket.off('roulette:result');
 			socket.off('roulette:noBets');
-			socket.off('roulette:gameStopped');
 		};
 	}, [socket]);
 
