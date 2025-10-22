@@ -111,52 +111,54 @@ const Games = () => {
 
 		// Mines game history
 		socket.on('mines:result', (data: any) => {
-			addToHistory(
-				data.gameId,
-				'mines',
-				data.profit,
-				{ result: 'Lost' },
-				data.time,
-			);
+			setTimeout(() => {
+				console.log('🚀 ~ file: games.tsx:151 ~ socket.on ~ data:', data);
+
+				socket.emit('game:history', { limit: 50, skip: 0 });
+			}, 2000);
+
+			// addToHistory(
+			// 	data.gameId,
+			// 	'mines',
+			// 	data.profit,
+			// 	{ result: 'Lost' },
+			// 	data.time,
+			// );
 		});
 
 		socket.on('mines:cashedOut', (data: any) => {
-			socket.emit('game:history', { limit: 50, skip: 0 });
-			addToHistory(
-				data.gameId,
-				'mines',
-				data.profit,
-				{ result: 'Win' },
-				data.time,
-			);
+			console.log('🚀 ~ Games ~ data:', data);
 		});
 
 		// Coinflip game history
 		socket.on('coinflip:result', (data: any) => {
-			addToHistory(
-				data.gameId,
-				'coinflip',
-				data.profit,
-				{ result: data.won ? 'Win' : 'Lost' },
-				data.time,
-			);
+			console.log('🚀 ~ Games ~ data:', data);
+
+			// addToHistory(
+			// 	data.gameId,
+			// 	'coinflip',
+			// 	data.profit,
+			// 	{ result: data.won ? 'Win' : 'Lost' },
+			// 	data.time,
+			// );
 		});
 
 		// Roulette game history
 		socket.on('roulette:result', (data: any) => {
 			console.log('🚀 ~ Games ~ data:', data);
-			if (data.winners && data.winners.length > 0) {
-				// biome-ignore lint/complexity/noForEach: <explanation>
-				data.winners.forEach((winner: any) => {
-					addToHistory(
-						data.roundId,
-						'roulette',
-						winner.profit,
-						{ result: 'Win', color: data.winningColor },
-						data.time,
-					);
-				});
-			}
+
+			// if (data.winners && data.winners.length > 0) {
+			// 	// biome-ignore lint/complexity/noForEach: <explanation>
+			// 	data.winners.forEach((winner: any) => {
+			// 		addToHistory(
+			// 			data.roundId,
+			// 			'roulette',
+			// 			winner.profit,
+			// 			{ result: 'Win', color: data.winningColor },
+			// 			data.time,
+			// 		);
+			// 	});
+			// }
 		});
 
 		socket.on('error', (data: any) => {
@@ -178,24 +180,24 @@ const Games = () => {
 		};
 	}, []);
 
-	const addToHistory = (
-		gameId: string,
-		gameType: string,
-		profit: number,
-		details: any,
-		time: any,
-	) => {
-		setHistory((prev) => [
-			{
-				id: gameId,
-				gameType,
-				profit: Number.parseFloat(profit.toFixed(2)),
-				details,
-				time: new Date(time).toLocaleTimeString(),
-			},
-			...prev,
-		]);
-	};
+	// const addToHistory = (
+	// 	gameId: string,
+	// 	gameType: string,
+	// 	profit: number,
+	// 	details: any,
+	// 	time: any,
+	// ) => {
+	// 	setHistory((prev) => [
+	// 		{
+	// 			id: gameId,
+	// 			gameType,
+	// 			profit: Number.parseFloat(profit.toFixed(2)),
+	// 			details,
+	// 			time: new Date(time).toLocaleTimeString(),
+	// 		},
+	// 		...prev,
+	// 	]);
+	// };
 
 	const handleRegister = async () => {
 		if (!formData.username.trim()) {

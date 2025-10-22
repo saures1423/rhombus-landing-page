@@ -70,33 +70,36 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 	const potentialWins = calculatePotentialWin();
 
 	useEffect(() => {
-		// Socket event handlers
-		socket.on('roulette:gameStarting', (data: any) => {
+		// ============================================
+		// SOCKET EVENT HANDLERS
+		// ============================================
+
+		const handleGameStarting = (data: any) => {
 			console.log('🎲 Game starting:', data);
 			setRoulette((prev) => ({
 				...prev,
 				result: null,
-				isSpinning: data.isSpinning,
+				isSpinning: false,
 				wheelOffset: 0,
 				placedBets: null,
 				animationKey: prev.animationKey + 1,
 			}));
-		});
+		};
 
-		socket.on('roulette:betConfirmed', (data: any) => {
+		const handleBetConfirmed = (data: any) => {
 			console.log('✅ Bet Confirmed successfully', data);
 			setRoulette((prev) => ({
 				...prev,
 				placedBets: { ...prev.bets },
 				bets: { black: 0, gold: 0, blue: 0, bait: 0 },
 			}));
-		});
+		};
 
-		socket.on('roulette:rolling', (data: any) => {
+		const handleRolling = (data: any) => {
 			console.log('🎰 Rolling started:', data);
 			setRoulette((prev) => ({
 				...prev,
-				isSpinning: data.isSpinning,
+				isSpinning: true,
 				wheelOffset: 0,
 				result: null,
 				animationKey: prev.animationKey + 1,
@@ -112,9 +115,9 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 					};
 				});
 			}, 100);
-		});
+		};
 
-		socket.on('roulette:result', (data: any) => {
+		const handleResult = (data: any) => {
 			console.log('✨ Result received:', data);
 
 			setTimeout(() => {
@@ -139,27 +142,60 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 
 				setRoulette((prev) => ({
 					...prev,
-					isSpinning: data.isSpinning,
+					isSpinning: false,
 					wheelOffset: finalOffset,
 					result: data.winningColor,
 					history: [data.winningColor, ...prev.history.slice(0, 99)],
 				}));
 			}, 300);
-		});
+		};
 
-		socket.on('roulette:history', (data: any) => {
-			console.log('🚀 ~ RouletteGame ~ data:', data);
+		const handleHistory = (data: any) => {
+			console.log('📜 History received:', data);
 			setRoulette((prev) => ({
 				...prev,
 				history: data.results || [],
 			}));
-		});
+		};
+
+		const handleNoBets = (data: any) => {
+			console.log('⚠️ No bets placed', data);
+			setRoulette((prev) => ({
+				...prev,
+				placedBets: null,
+				isSpinning: false,
+			}));
+		};
+
+		const handleGameStopped = (data: any) => {
+			console.log('🛑 Game stopped:', data);
+			setRoulette({
+				bets: { black: 0, gold: 0, blue: 0, bait: 0 },
+				placedBets: null,
+				result: null,
+				wheelOffset: 0,
+				isSpinning: false,
+				history: [],
+				animationKey: 0,
+			});
+		};
+
+		socket.on('roulette:gameStarting', handleGameStarting);
+		socket.on('roulette:betConfirmed', handleBetConfirmed);
+		socket.on('roulette:rolling', handleRolling);
+		socket.on('roulette:result', handleResult);
+		socket.on('roulette:history', handleHistory);
+		socket.on('roulette:noBets', handleNoBets);
+		socket.on('roulette:gameStopped', handleGameStopped);
+
 		return () => {
-			socket.off('roulette:gameStarting');
-			socket.off('roulette:betConfirmed');
-			socket.off('roulette:rolling');
-			socket.off('roulette:result');
-			socket.off('roulette:history');
+			socket.off('roulette:gameStarting', handleGameStarting);
+			socket.off('roulette:betConfirmed', handleBetConfirmed);
+			socket.off('roulette:rolling', handleRolling);
+			socket.off('roulette:result', handleResult);
+			socket.off('roulette:history', handleHistory);
+			socket.off('roulette:noBets', handleNoBets);
+			socket.off('roulette:gameStopped', handleGameStopped);
 		};
 	}, [socket]);
 
@@ -171,7 +207,7 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 
 		const newBets = {
 			...roulette.bets,
-			[color]: roulette.bets[color] + amount,
+			[color]: roulette.bets[color as keyof typeof roulette.bets] + amount,
 		};
 		const newTotal = Object.values(newBets).reduce((a, b) => a + b, 0);
 
@@ -184,8 +220,18 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 	};
 
 	const placeBet = () => {
-		if (totalBet === 0 || !user || countdown.phase !== 'betting') {
-			alert('Please place a bet and wait for betting phase');
+		if (totalBet === 0) {
+			alert('Please place a bet first');
+			return;
+		}
+
+		if (!user) {
+			alert('User not found');
+			return;
+		}
+
+		if (countdown.phase !== 'betting') {
+			alert('Can only place bets during betting phase');
 			return;
 		}
 
@@ -194,11 +240,61 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 			selectedColors: roulette.bets,
 		});
 
+		console.log('📤 Bet placed:', {
+			betAmount: totalBet,
+			selectedColors: roulette.bets,
+		});
+	};
+
+	const clearBets = () => {
 		setRoulette((prev) => ({
 			...prev,
 			bets: { black: 0, gold: 0, blue: 0, bait: 0 },
 		}));
 	};
+
+	const getPhaseDisplay = () => {
+		switch (countdown.phase) {
+			case 'betting':
+				return {
+					text: '🎲 Place Your Bets',
+					className: 'phase-betting',
+				};
+			case 'rolling':
+				return {
+					text: '🎰 Spinning...',
+					className: 'phase-rolling',
+				};
+			case 'completed':
+				if (roulette.result) {
+					return {
+						text: `${colors[roulette.result as keyof typeof colors].symbol} ${colors[roulette.result as keyof typeof colors].label} Wins!`,
+						className: 'phase-completed',
+					};
+				}
+				return {
+					text: '✅ Round Complete',
+					className: 'phase-completed',
+				};
+			case 'idle':
+				return {
+					text: '✅ Round Idle',
+					className: 'phase-completed',
+				};
+			case 'waiting':
+				return {
+					text: '✅ Round Waiting',
+					className: 'phase-completed',
+				};
+			default:
+				return {
+					text: '⏳ Waiting for Next Round...',
+					className: 'phase-waiting',
+				};
+		}
+	};
+
+	const phaseDisplay = getPhaseDisplay();
 
 	const wheelStyles = `
 		.wheel-container {
@@ -311,6 +407,7 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 			text-transform: uppercase;
 			letter-spacing: 1px;
 			display: inline-block;
+			transition: all 0.3s ease;
 		}
 
 		.phase-betting {
@@ -345,7 +442,34 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 			25% { transform: scale(1.05) rotate(-2deg); }
 			75% { transform: scale(1.05) rotate(2deg); }
 		}
+
+		.bet-button {
+			transition: all 0.2s ease;
+		}
+
+		.bet-button:hover:not(:disabled) {
+			transform: translateY(-2px);
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+		}
+
+		.bet-button:active:not(:disabled) {
+			transform: translateY(0);
+		}
+
+		.color-bet-card {
+			transition: all 0.2s ease;
+			cursor: pointer;
+		}
+
+		.color-bet-card:hover:not(:disabled) {
+			transform: scale(1.05);
+		}
+
+		.color-bet-card:active:not(:disabled) {
+			transform: scale(0.95);
+		}
 	`;
+
 	return (
 		<div className="space-y-4">
 			<style>{wheelStyles}</style>
@@ -356,40 +480,24 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 					Roulette Wheel
 				</div>
 
+				{/* Phase Indicator */}
 				<div className="mb-4 text-center">
-					<span
-						className={`phase-indicator ${
-							countdown.phase === 'betting'
-								? 'phase-betting'
-								: countdown.phase === 'rolling'
-									? 'phase-rolling'
-									: 'phase-completed'
-						}`}
-					>
-						{countdown.phase === 'betting' && '🎲 Place Your Bets'}
-						{countdown.phase === 'rolling' && '🎰 Spinning...'}
-						{countdown.phase === 'waiting' && '⏳ Waiting...'}
-						{countdown.phase === 'completed' && roulette.result && (
-							<>
-								{colors[roulette.result as keyof typeof colors].symbol}{' '}
-								{colors[roulette.result as keyof typeof colors].label} Wins!
-							</>
-						)}
+					<span className={`phase-indicator ${phaseDisplay.className}`}>
+						{phaseDisplay.text}
 					</span>
 				</div>
 
+				{/* Wheel Animation */}
 				<div className="relative flex justify-center items-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 shadow-2xl mb-6 rounded-xl h-48 overflow-hidden wheel-container">
-					{/* biome-ignore lint/style/useSelfClosingElements: <explanation> */}
-					<div className="center-indicator"></div>
+					<div className="center-indicator" />
 					<div className="wheel-wrapper">
 						<div
 							key={roulette.animationKey}
-							className={`wheel ${countdown.phase === 'rolling' ? 'spinning' : 'stopped'}`}
+							className={`wheel ${roulette.isSpinning ? 'spinning' : 'stopped'}`}
 							style={{
 								transform: `translateX(-${roulette.wheelOffset}px)`,
 							}}
 						>
-							{/* Render 10 sequences for smooth scrolling */}
 							{Array.from({ length: 10 }, (_, setIndex) =>
 								colorSequence.map((color, idx) => (
 									<div
@@ -407,8 +515,17 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 						</div>
 					</div>
 				</div>
+
+				{/* Round Info */}
+				{countdown.roundId && (
+					<div className="text-gray-400 text-xs text-center">
+						Round: {countdown.roundId.slice(-8)}
+						{countdown.betsCount > 0 && ` • ${countdown.betsCount} bets`}
+					</div>
+				)}
 			</div>
 
+			{/* Status Display */}
 			<div className="space-y-3 text-center">
 				<div
 					className={`font-bold text-4xl transition-all duration-500 ${
@@ -420,22 +537,27 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 						: 'WAITING...'}
 				</div>
 
-				<div className="flex justify-center items-center gap-4">
-					<div className="bg-gray-900/50 px-4 py-2 border border-gray-700 rounded-lg">
-						<div className="mb-1 text-gray-400 text-xs">Time Left</div>
-						<div
-							className={`font-bold text-2xl transition-colors ${
-								countdown.timeLeft <= 5
-									? 'text-red-400 animate-pulse'
-									: countdown.timeLeft <= 10
-										? 'text-yellow-400'
-										: 'text-white'
-							}`}
-						>
-							{countdown.timeLeft}s
+				{/* Timer and Current Bet */}
+				<div className="flex flex-wrap justify-center items-center gap-4">
+					{/* Countdown Timer */}
+					{(countdown.phase === 'betting' || countdown.phase === 'rolling') && (
+						<div className="bg-gray-900/50 px-4 py-2 border border-gray-700 rounded-lg">
+							<div className="mb-1 text-gray-400 text-xs">Time Left</div>
+							<div
+								className={`font-bold text-2xl transition-colors ${
+									countdown.timeLeft <= 5
+										? 'text-red-400 animate-pulse'
+										: countdown.timeLeft <= 10
+											? 'text-yellow-400'
+											: 'text-white'
+								}`}
+							>
+								{countdown.timeLeft}s
+							</div>
 						</div>
-					</div>
+					)}
 
+					{/* Current Bet Display */}
 					{totalBet > 0 && (
 						<div className="bg-green-600/20 px-4 py-2 border border-green-600 rounded-lg">
 							<div className="mb-1 text-green-400 text-xs">Your Bet</div>
@@ -444,18 +566,28 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 							</div>
 						</div>
 					)}
+
+					{/* Placed Bets Display */}
+					{placedTotalBet > 0 && (
+						<div className="bg-blue-600/20 px-4 py-2 border border-blue-600 rounded-lg">
+							<div className="mb-1 text-blue-400 text-xs">Active Bet</div>
+							<div className="font-bold text-blue-400 text-2xl">
+								${placedTotalBet}
+							</div>
+						</div>
+					)}
 				</div>
 
-				{/* Show placed bets and potential wins during rolling/completed phase */}
+				{/* Placed Bets Breakdown */}
 				{roulette.placedBets && placedTotalBet > 0 && (
-					<div className="space-y-3 mt-4">
+					<div className="mt-4">
 						<div className="bg-blue-600/10 p-4 border border-blue-600/30 rounded-lg">
 							<div className="flex justify-between items-center mb-3 font-bold text-blue-400 text-sm">
 								<span>💰 Your Active Bets</span>
 								<span className="text-blue-300">${placedTotalBet} Total</span>
 							</div>
 
-							<div className="gap-2 grid grid-cols-2">
+							<div className="gap-2 grid grid-cols-2 md:grid-cols-4">
 								{Object.entries(roulette.placedBets).map(([color, amount]) => {
 									if (amount === 0) return null;
 									return (
@@ -490,26 +622,6 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 									);
 								})}
 							</div>
-
-							{/* Total potential wins */}
-							<div className="mt-3 pt-3 border-blue-600/20 border-t">
-								<div className="flex justify-between items-center">
-									<span className="text-gray-400 text-sm">Possible Wins:</span>
-									<div className="text-right">
-										{Object.entries(potentialWins).map(([color, win]) => (
-											<div
-												key={color}
-												className="font-bold text-sm"
-												style={{
-													color: colors[color as keyof typeof colors].color,
-												}}
-											>
-												{colors[color as keyof typeof colors].label}: ${win}
-											</div>
-										))}
-									</div>
-								</div>
-							</div>
 						</div>
 					</div>
 				)}
@@ -517,8 +629,8 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 
 			{/* History Pills */}
 			{/* {roulette.history.length > 0 && (
-				<div className="mt-6 pt-4 border-gray-700 border-t">
-					<div className="mb-3 font-bold text-black text-md uppercase tracking-wider">
+				<div className="pt-4 border-gray-700 border-t">
+					<div className="mb-3 font-bold text-gray-300 text-sm uppercase tracking-wider">
 						Last 10 Results
 					</div>
 					<div className="flex gap-2 pb-2 overflow-x-auto">
@@ -541,51 +653,48 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 
 			{/* Betting Controls */}
 			<div className="space-y-4 bg-gray-800/50 backdrop-blur p-4 border border-gray-700 rounded-lg">
+				{/* Quick Bet Buttons */}
 				<div className="gap-2 grid grid-cols-4">
 					<button
 						onClick={() => addRouletteBet('black', 10)}
 						disabled={countdown.phase !== 'betting'}
-						className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-2 py-2 rounded font-bold text-xs transition"
+						className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-2 py-2 rounded font-bold text-xs transition disabled:cursor-not-allowed bet-button"
 					>
-						+10
+						+$10
 					</button>
 					<button
 						onClick={() => addRouletteBet('black', 100)}
 						disabled={countdown.phase !== 'betting'}
-						className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-2 py-2 rounded font-bold text-xs transition"
+						className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-2 py-2 rounded font-bold text-xs transition disabled:cursor-not-allowed bet-button"
 					>
-						+100
+						+$100
 					</button>
 					<button
 						onClick={() =>
 							addRouletteBet('black', Math.floor(user.balance / 4))
 						}
 						disabled={countdown.phase !== 'betting' || user.balance === 0}
-						className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-2 py-2 rounded font-bold text-xs transition"
+						className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-2 py-2 rounded font-bold text-xs transition disabled:cursor-not-allowed bet-button"
 					>
 						MAX
 					</button>
 					<button
-						onClick={() =>
-							setRoulette((prev) => ({
-								...prev,
-								bets: { black: 0, gold: 0, blue: 0, bait: 0 },
-							}))
-						}
-						className="bg-red-700/50 hover:bg-red-600 px-2 py-2 rounded font-bold text-xs transition"
+						onClick={clearBets}
+						disabled={countdown.phase !== 'betting'}
+						className="bg-red-700/50 hover:bg-red-600 disabled:opacity-50 px-2 py-2 rounded font-bold text-xs transition disabled:cursor-not-allowed bet-button"
 					>
 						CLEAR
 					</button>
 				</div>
 
 				{/* Color Buttons */}
-				<div className="gap-2 grid grid-cols-4">
+				<div className="gap-2 grid grid-cols-2 md:grid-cols-4">
 					{Object.entries(colors).map(([colorKey, colorData]) => (
 						<button
 							key={colorKey}
 							onClick={() => addRouletteBet(colorKey, 1)}
 							disabled={countdown.phase !== 'betting'}
-							className="disabled:opacity-50 p-4 border-2 rounded-lg hover:scale-105 active:scale-95 transition"
+							className="disabled:opacity-50 p-4 border-2 rounded-lg transition disabled:cursor-not-allowed color-bet-card"
 							style={{
 								backgroundColor: `${colorData.color}30`,
 								borderColor: colorData.color,
@@ -609,9 +718,9 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 				<button
 					onClick={placeBet}
 					disabled={countdown.phase !== 'betting' || totalBet === 0}
-					className="bg-gradient-to-r from-green-600 hover:from-green-500 disabled:from-gray-600 to-green-500 hover:to-green-400 disabled:to-gray-600 disabled:opacity-50 shadow-lg hover:shadow-green-500/50 py-4 rounded-lg w-full font-bold text-lg transition-all"
+					className="bg-gradient-to-r from-green-600 hover:from-green-500 disabled:from-gray-600 to-green-500 hover:to-green-400 disabled:to-gray-600 disabled:opacity-50 shadow-lg hover:shadow-green-500/50 py-4 rounded-lg w-full font-bold text-lg transition-all disabled:cursor-not-allowed"
 				>
-					{totalBet > 0 ? `PLACE BET - ${totalBet}` : 'SELECT YOUR BETS'}
+					{totalBet > 0 ? `PLACE BET - $${totalBet}` : 'SELECT YOUR BETS'}
 				</button>
 			</div>
 		</div>
