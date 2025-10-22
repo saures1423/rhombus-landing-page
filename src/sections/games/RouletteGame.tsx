@@ -23,6 +23,8 @@ const RouletteGame = ({ user, socket, countdown }: RouletteGameProps) => {
 		animationKey: 0,
 	});
 
+	console.log('🚀 ~ RouletteGame ~ roulette:', roulette);
+
 	const colors = {
 		black: { label: 'BLACK', multiplier: 2, color: '#4a4a4a', symbol: '♠' },
 		gold: { label: 'GOLD', multiplier: 14, color: '#d4af37', symbol: '⚡' },
@@ -317,7 +319,14 @@ const RouletteGame = ({ user, socket, countdown }: RouletteGameProps) => {
 					>
 						{countdown.phase === 'betting' && '🎲 Place Your Bets'}
 						{countdown.phase === 'rolling' && '🎰 Spinning...'}
-						{countdown.phase === 'completed' && '✨ Winner!'}
+
+						{countdown.phase === 'completed' &&
+							roulette.result &&
+							`${
+								// biome-ignore lint/style/useTemplate: <explanation>
+								colors[roulette.result as keyof typeof colors].label +
+								'✨ Winner!'
+							}`}
 					</span>
 				</div>
 
