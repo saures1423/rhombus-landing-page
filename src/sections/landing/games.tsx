@@ -1,4 +1,3 @@
-import { useRouletteCountdown } from '@/hooks/useRouletteCountdown';
 import {
 	Coins,
 	DollarSign,
@@ -37,8 +36,6 @@ const socket = io(`${socketUrl}/game`, {
 });
 
 const Games = () => {
-	const countdown = useRouletteCountdown(socket);
-
 	const [user, setUser] = useState<{
 		id: string;
 		username: string;
@@ -147,6 +144,7 @@ const Games = () => {
 
 		// Roulette game history
 		socket.on('roulette:result', (data: any) => {
+			console.log('🚀 ~ Games ~ data:', data);
 			if (data.winners && data.winners.length > 0) {
 				// biome-ignore lint/complexity/noForEach: <explanation>
 				data.winners.forEach((winner: any) => {
@@ -378,7 +376,7 @@ const Games = () => {
 						)}
 
 						{activeGame === 'roulette' && (
-							<RouletteGame user={user} socket={socket} countdown={countdown} />
+							<RouletteGame user={user} socket={socket} />
 						)}
 					</div>
 

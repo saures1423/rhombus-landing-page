@@ -1,5 +1,5 @@
 import { Shield } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface MinesGameProps {
 	user: { id: string; username: string; balance: number };
@@ -55,48 +55,57 @@ const MinesGame = ({ user, socket, onShowProvablyFair }: MinesGameProps) => {
 		socket.emit('mines:cashout', { gameId: minesGame.gameId });
 	};
 
-	// Socket event handlers
-	socket.on('mines:started', (data: any) => {
-		console.log('💎 [mines:started] Game started:', data);
-		setMinesGame((prev) => ({
-			...prev,
-			gameId: data.gameId,
-			isActive: true,
-			gameOver: false,
-			revealedTiles: [],
-			minePositions: [],
-			currentMultiplier: 1,
-		}));
-	});
+	useEffect(() => {
+		// Socket event handlers
+		socket.on('mines:started', (data: any) => {
+			console.log('💎 [mines:started] Game started:', data);
+			setMinesGame((prev) => ({
+				...prev,
+				gameId: data.gameId,
+				isActive: true,
+				gameOver: false,
+				revealedTiles: [],
+				minePositions: [],
+				currentMultiplier: 1,
+			}));
+		});
 
-	socket.on('mines:tileRevealed', (data: any) => {
-		console.log('🪙 [mines:tileRevealed] Tile revealed:', data);
-		setMinesGame((prev) => ({
-			...prev,
-			revealedTiles: [...prev.revealedTiles, data.tileIndex],
-			currentMultiplier: data.currentMultiplier,
-		}));
-	});
+		socket.on('mines:tileRevealed', (data: any) => {
+			console.log('🪙 [mines:tileRevealed] Tile revealed:', data);
+			setMinesGame((prev) => ({
+				...prev,
+				revealedTiles: [...prev.revealedTiles, data.tileIndex],
+				currentMultiplier: data.currentMultiplier,
+			}));
+		});
 
-	socket.on('mines:result', (data: any) => {
-		console.log('💥 [mines:result] Game result received:', data);
-		setMinesGame((prev) => ({
-			...prev,
-			isActive: false,
-			gameOver: true,
-			minePositions: data.minePositions,
-		}));
-	});
+		socket.on('mines:result', (data: any) => {
+			console.log('💥 [mines:result] Game result received:', data);
+			setMinesGame((prev) => ({
+				...prev,
+				isActive: false,
+				gameOver: true,
+				minePositions: data.minePositions,
+			}));
+		});
 
-	socket.on('mines:cashedOut', (data: any) => {
-		console.log('💸 [mines:cashedOut] Player cashed out:', data);
-		setMinesGame((prev) => ({
-			...prev,
-			isActive: false,
-			gameOver: true,
-			minePositions: data.minePositions,
-		}));
-	});
+		socket.on('mines:cashedOut', (data: any) => {
+			console.log('💸 [mines:cashedOut] Player cashed out:', data);
+			setMinesGame((prev) => ({
+				...prev,
+				isActive: false,
+				gameOver: true,
+				minePositions: data.minePositions,
+			}));
+		});
+		return () => {
+			// Cleanup socket event handlers
+			socket.off('mines:started');
+			socket.off('mines:tileRevealed');
+			socket.off('mines:result');
+			socket.off('mines:cashedOut');
+		};
+	}, [socket]);
 
 	return (
 		<div className="space-y-4">

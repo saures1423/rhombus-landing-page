@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useRouletteCountdown } from '@/hooks/useRouletteCountdown';
+import { useEffect, useState } from 'react';
 
 interface RouletteGameProps {
 	user: { id: string; username: string; balance: number };
 	socket: any;
-	countdown: { phase: string; timeLeft: number };
 }
 
-const RouletteGame = ({ user, socket, countdown }: RouletteGameProps) => {
+const RouletteGame = ({ user, socket }: RouletteGameProps) => {
+	const countdown = useRouletteCountdown(socket);
+
 	const [roulette, setRoulette] = useState<{
 		bets: Record<string, number>;
+		placedBets: Record<string, number> | null;
 		result: string | null;
 		wheelOffset: number;
 		isSpinning: boolean;
@@ -16,14 +19,13 @@ const RouletteGame = ({ user, socket, countdown }: RouletteGameProps) => {
 		animationKey: number;
 	}>({
 		bets: { black: 0, gold: 0, blue: 0, bait: 0 },
+		placedBets: null,
 		result: null,
 		wheelOffset: 0,
 		isSpinning: false,
 		history: [],
 		animationKey: 0,
 	});
-
-	console.log('🚀 ~ RouletteGame ~ roulette:', roulette);
 
 	const colors = {
 		black: { label: 'BLACK', multiplier: 2, color: '#4a4a4a', symbol: '♠' },
@@ -46,6 +48,120 @@ const RouletteGame = ({ user, socket, countdown }: RouletteGameProps) => {
 	];
 
 	const totalBet = Object.values(roulette.bets).reduce((a, b) => a + b, 0);
+
+	const placedTotalBet = roulette.placedBets
+		? Object.values(roulette.placedBets).reduce((a, b) => a + b, 0)
+		: 0;
+
+	// Calculate potential win for placed bets
+	const calculatePotentialWin = () => {
+		if (!roulette.placedBets) return {};
+
+		const potentials: Record<string, number> = {};
+		for (const [color, amount] of Object.entries(roulette.placedBets)) {
+			if (amount > 0) {
+				potentials[color] =
+					amount * colors[color as keyof typeof colors].multiplier;
+			}
+		}
+		return potentials;
+	};
+
+	const potentialWins = calculatePotentialWin();
+
+	useEffect(() => {
+		// Socket event handlers
+		socket.on('roulette:gameStarting', (data: any) => {
+			console.log('🎲 Game starting:', data);
+			setRoulette((prev) => ({
+				...prev,
+				result: null,
+				isSpinning: data.isSpinning,
+				wheelOffset: 0,
+				placedBets: null,
+				animationKey: prev.animationKey + 1,
+			}));
+		});
+
+		socket.on('roulette:betConfirmed', (data: any) => {
+			console.log('✅ Bet Confirmed successfully', data);
+			setRoulette((prev) => ({
+				...prev,
+				placedBets: { ...prev.bets },
+				bets: { black: 0, gold: 0, blue: 0, bait: 0 },
+			}));
+		});
+
+		socket.on('roulette:rolling', (data: any) => {
+			console.log('🎰 Rolling started:', data);
+			setRoulette((prev) => ({
+				...prev,
+				isSpinning: data.isSpinning,
+				wheelOffset: 0,
+				result: null,
+				animationKey: prev.animationKey + 1,
+			}));
+
+			setTimeout(() => {
+				setRoulette((prev) => {
+					const itemWidth = 128;
+					const loopOffset = itemWidth * colorSequence.length * 6;
+					return {
+						...prev,
+						wheelOffset: loopOffset,
+					};
+				});
+			}, 100);
+		});
+
+		socket.on('roulette:result', (data: any) => {
+			console.log('✨ Result received:', data);
+
+			setTimeout(() => {
+				const itemWidth = 128;
+				const winningIndex = colorSequence.indexOf(data.winningColor);
+
+				if (winningIndex === -1) {
+					console.error('Invalid winning color:', data.winningColor);
+					return;
+				}
+
+				const fullLoops = 5;
+				const middleSequenceStart = 3;
+				const centerOffset = 64;
+
+				const finalOffset =
+					(fullLoops * colorSequence.length +
+						middleSequenceStart * colorSequence.length +
+						winningIndex) *
+						itemWidth +
+					centerOffset;
+
+				setRoulette((prev) => ({
+					...prev,
+					isSpinning: data.isSpinning,
+					wheelOffset: finalOffset,
+					result: data.winningColor,
+					history: [data.winningColor, ...prev.history.slice(0, 99)],
+				}));
+			}, 300);
+		});
+
+		socket.on('roulette:history', (data: any) => {
+			console.log('🚀 ~ RouletteGame ~ data:', data);
+			setRoulette((prev) => ({
+				...prev,
+				history: data.results || [],
+			}));
+		});
+		return () => {
+			socket.off('roulette:gameStarting');
+			socket.off('roulette:betConfirmed');
+			socket.off('roulette:rolling');
+			socket.off('roulette:result');
+			socket.off('roulette:history');
+		};
+	}, [socket]);
 
 	const addRouletteBet = (color: string, amount: number) => {
 		if (countdown.phase !== 'betting') {
@@ -84,219 +200,152 @@ const RouletteGame = ({ user, socket, countdown }: RouletteGameProps) => {
 		}));
 	};
 
-	// Socket event handlers
-	socket.on('roulette:gameStarting', (data: any) => {
-		console.log('🎲 Game starting:', data);
-		setRoulette((prev) => ({
-			...prev,
-			result: null,
-			isSpinning: false,
-			wheelOffset: 0,
-			animationKey: prev.animationKey + 1,
-		}));
-	});
-
-	socket.on('roulette:betConfirmed', (data: any) => {
-		console.log('✅ Bet Confirmed successfully', data);
-		setRoulette((prev) => ({
-			...prev,
-			bets: { black: 0, gold: 0, blue: 0, bait: 0 },
-		}));
-	});
-
-	socket.on('roulette:rolling', (data: any) => {
-		console.log('🎰 Rolling started:', data);
-		setRoulette((prev) => ({
-			...prev,
-			isSpinning: true,
-			wheelOffset: 0,
-			result: null,
-			animationKey: prev.animationKey + 1,
-		}));
-
-		setTimeout(() => {
-			setRoulette((prev) => {
-				const itemWidth = 128;
-				const loopOffset = itemWidth * colorSequence.length * 6;
-				return {
-					...prev,
-					wheelOffset: loopOffset,
-				};
-			});
-		}, 100);
-	});
-
-	socket.on('roulette:result', (data: any) => {
-		console.log('✨ Result received:', data);
-
-		setTimeout(() => {
-			const itemWidth = 128;
-			const winningIndex = colorSequence.indexOf(data.winningColor);
-
-			if (winningIndex === -1) {
-				console.error('Invalid winning color:', data.winningColor);
-				return;
-			}
-
-			const fullLoops = 5;
-			const middleSequenceStart = 3;
-			const centerOffset = 64;
-
-			const finalOffset =
-				(fullLoops * colorSequence.length +
-					middleSequenceStart * colorSequence.length +
-					winningIndex) *
-					itemWidth +
-				centerOffset;
-
-			setRoulette((prev) => ({
-				...prev,
-				isSpinning: data.isSpinning,
-				wheelOffset: finalOffset,
-				result: data.winningColor,
-				history: [data.winningColor, ...prev.history.slice(0, 99)],
-			}));
-		}, 300);
-	});
-
-	socket.on('roulette:history', (data: any) => {
-		console.log('🚀 ~ RouletteGame ~ data:', data);
-		setRoulette((prev) => ({
-			...prev,
-			history: data.results || [],
-		}));
-	});
-
 	const wheelStyles = `
-	.wheel-container {
-		mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
-		-webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
-		position: relative;
-		overflow: hidden;
-	}
-	
-	.wheel-wrapper {
-		display: flex;
-		align-items: center;
-		height: 100%;
-		position: relative;
-	}
-	
-	.wheel {
-		display: flex;
-		gap: 8px;
-		will-change: transform;
-		transition: none;
-	}
-	
-	.wheel.spinning {
-		transition: transform 8s cubic-bezier(0.25, 0.1, 0.25, 1);
-	}
-	
-	.wheel.stopped {
-		transition: transform 4s cubic-bezier(0.15, 0.8, 0.3, 1);
-	}
-	
-	.wheel-item {
-		min-width: 120px;
-		width: 120px;
-		height: 140px;
-		border-radius: 12px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 48px;
-		font-weight: bold;
-		flex-shrink: 0;
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-		border: 2px solid rgba(255, 255, 255, 0.1);
-		position: relative;
-	}
-	
-	.center-indicator {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: 4px;
-		height: 120%;
-		background: linear-gradient(
-			to bottom, 
-			transparent 0%, 
-			rgba(255,215,0,0.3) 20%,
-			rgba(255,215,0,1) 50%,
-			rgba(255,215,0,0.3) 80%,
-			transparent 100%
-		);
-		pointer-events: none;
-		z-index: 10;
-		box-shadow: 
-			0 0 20px rgba(255,215,0,0.8),
-			0 0 40px rgba(255,215,0,0.4);
-		border-radius: 2px;
-	}
+		.wheel-container {
+			mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+			-webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+			position: relative;
+			overflow: hidden;
+		}
+		
+		.wheel-wrapper {
+			display: flex;
+			align-items: center;
+			height: 100%;
+			position: relative;
+		}
+		
+		.wheel {
+			display: flex;
+			gap: 8px;
+			will-change: transform;
+		}
+		
+		.wheel.spinning {
+			transition: transform 5s linear;
+		}
+		
+		.wheel.stopped {
+			transition: transform 3s cubic-bezier(0.15, 0.5, 0.2, 1);
+		}
+		
+		.wheel-item {
+			min-width: 120px;
+			width: 120px;
+			height: 140px;
+			border-radius: 12px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 48px;
+			font-weight: bold;
+			flex-shrink: 0;
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+			border: 2px solid rgba(255, 255, 255, 0.1);
+			position: relative;
+		}
+		
+		.center-indicator {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			width: 4px;
+			height: 120%;
+			background: linear-gradient(
+				to bottom, 
+				transparent 0%, 
+				rgba(255,215,0,0.3) 20%,
+				rgba(255,215,0,1) 50%,
+				rgba(255,215,0,0.3) 80%,
+				transparent 100%
+			);
+			pointer-events: none;
+			z-index: 10;
+			box-shadow: 
+				0 0 20px rgba(255,215,0,0.8),
+				0 0 40px rgba(255,215,0,0.4);
+			border-radius: 2px;
+		}
 
-	.center-indicator::before,
-	.center-indicator::after {
-		content: '';
-		position: absolute;
-		left: 50%;
-		transform: translateX(-50%);
-		border-left: 12px solid transparent;
-		border-right: 12px solid transparent;
-	}
+		.center-indicator::before,
+		.center-indicator::after {
+			content: '';
+			position: absolute;
+			left: 50%;
+			transform: translateX(-50%);
+			border-left: 12px solid transparent;
+			border-right: 12px solid transparent;
+		}
 
-	.center-indicator::before {
-		top: -10px;
-		border-bottom: 15px solid rgba(255,215,0,1);
-		filter: drop-shadow(0 0 8px rgba(255,215,0,0.6));
-	}
+		.center-indicator::before {
+			top: -10px;
+			border-bottom: 15px solid rgba(255,215,0,1);
+			filter: drop-shadow(0 0 8px rgba(255,215,0,0.6));
+		}
 
-	.center-indicator::after {
-		bottom: -10px;
-		border-top: 15px solid rgba(255,215,0,1);
-		filter: drop-shadow(0 0 8px rgba(255,215,0,0.6));
-	}
+		.center-indicator::after {
+			bottom: -10px;
+			border-top: 15px solid rgba(255,215,0,1);
+			filter: drop-shadow(0 0 8px rgba(255,215,0,0.6));
+		}
 
-	.phase-indicator {
-		padding: 8px 16px;
-		border-radius: 20px;
-		font-weight: bold;
-		font-size: 14px;
-		text-transform: uppercase;
-		letter-spacing: 1px;
-		display: inline-block;
-	}
+		@keyframes pulse-glow {
+			0%, 100% { 
+				box-shadow: 0 0 20px rgba(255,215,0,0.8), 0 0 40px rgba(255,215,0,0.4);
+			}
+			50% { 
+				box-shadow: 0 0 30px rgba(255,215,0,1), 0 0 60px rgba(255,215,0,0.6);
+			}
+		}
 
-	.phase-betting {
-		background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-		box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-		animation: pulse-betting 2s ease-in-out infinite;
-	}
+		.wheel.spinning ~ .center-indicator {
+			animation: pulse-glow 1s ease-in-out infinite;
+		}
 
-	.phase-rolling {
-		background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-		box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
-		animation: pulse-rolling 0.8s ease-in-out infinite;
-	}
+		.phase-indicator {
+			padding: 8px 16px;
+			border-radius: 20px;
+			font-weight: bold;
+			font-size: 14px;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			display: inline-block;
+		}
 
-	.phase-completed {
-		background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-		box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
-	}
+		.phase-betting {
+			background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+			box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+			animation: pulse-betting 2s ease-in-out infinite;
+		}
 
-	@keyframes pulse-betting {
-		0%, 100% { transform: scale(1); }
-		50% { transform: scale(1.05); }
-	}
+		.phase-rolling {
+			background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+			box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+			animation: pulse-rolling 0.8s ease-in-out infinite;
+		}
 
-	@keyframes pulse-rolling {
-		0%, 100% { transform: scale(1) rotate(0deg); }
-		25% { transform: scale(1.05) rotate(-2deg); }
-		75% { transform: scale(1.05) rotate(2deg); }
-	}
-`;
+		.phase-completed {
+			background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+			box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+		}
 
+		.phase-waiting {
+			background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+			box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+		}
+
+		@keyframes pulse-betting {
+			0%, 100% { transform: scale(1); }
+			50% { transform: scale(1.05); }
+		}
+
+		@keyframes pulse-rolling {
+			0%, 100% { transform: scale(1) rotate(0deg); }
+			25% { transform: scale(1.05) rotate(-2deg); }
+			75% { transform: scale(1.05) rotate(2deg); }
+		}
+	`;
 	return (
 		<div className="space-y-4">
 			<style>{wheelStyles}</style>
@@ -319,14 +368,13 @@ const RouletteGame = ({ user, socket, countdown }: RouletteGameProps) => {
 					>
 						{countdown.phase === 'betting' && '🎲 Place Your Bets'}
 						{countdown.phase === 'rolling' && '🎰 Spinning...'}
-
-						{countdown.phase === 'completed' &&
-							roulette.result &&
-							`${
-								// biome-ignore lint/style/useTemplate: <explanation>
-								colors[roulette.result as keyof typeof colors].label +
-								'✨ Winner!'
-							}`}
+						{countdown.phase === 'waiting' && '⏳ Waiting...'}
+						{countdown.phase === 'completed' && roulette.result && (
+							<>
+								{colors[roulette.result as keyof typeof colors].symbol}{' '}
+								{colors[roulette.result as keyof typeof colors].label} Wins!
+							</>
+						)}
 					</span>
 				</div>
 
@@ -336,37 +384,26 @@ const RouletteGame = ({ user, socket, countdown }: RouletteGameProps) => {
 					<div className="wheel-wrapper">
 						<div
 							key={roulette.animationKey}
-							className={`wheel ${roulette.isSpinning ? 'spinning' : 'stopped'}`}
+							className={`wheel ${countdown.phase === 'rolling' ? 'spinning' : 'stopped'}`}
 							style={{
 								transform: `translateX(-${roulette.wheelOffset}px)`,
 							}}
 						>
-							{[
-								...colorSequence,
-								...colorSequence,
-								...colorSequence,
-								...colorSequence,
-								...colorSequence,
-								...colorSequence,
-								...colorSequence,
-								...colorSequence,
-								...colorSequence,
-								...colorSequence,
-								...colorSequence,
-								...colorSequence,
-								...colorSequence,
-								...colorSequence,
-							].map((color, idx) => (
-								<div
-									key={`${color}-${idx}`}
-									className="wheel-item"
-									style={{
-										backgroundColor: colors[color as keyof typeof colors].color,
-									}}
-								>
-									{colors[color as keyof typeof colors].symbol}
-								</div>
-							))}
+							{/* Render 10 sequences for smooth scrolling */}
+							{Array.from({ length: 10 }, (_, setIndex) =>
+								colorSequence.map((color, idx) => (
+									<div
+										key={`${setIndex}-${color}-${idx}`}
+										className="wheel-item"
+										style={{
+											backgroundColor:
+												colors[color as keyof typeof colors].color,
+										}}
+									>
+										{colors[color as keyof typeof colors].symbol}
+									</div>
+								)),
+							)}
 						</div>
 					</div>
 				</div>
@@ -408,6 +445,74 @@ const RouletteGame = ({ user, socket, countdown }: RouletteGameProps) => {
 						</div>
 					)}
 				</div>
+
+				{/* Show placed bets and potential wins during rolling/completed phase */}
+				{roulette.placedBets && placedTotalBet > 0 && (
+					<div className="space-y-3 mt-4">
+						<div className="bg-blue-600/10 p-4 border border-blue-600/30 rounded-lg">
+							<div className="flex justify-between items-center mb-3 font-bold text-blue-400 text-sm">
+								<span>💰 Your Active Bets</span>
+								<span className="text-blue-300">${placedTotalBet} Total</span>
+							</div>
+
+							<div className="gap-2 grid grid-cols-2">
+								{Object.entries(roulette.placedBets).map(([color, amount]) => {
+									if (amount === 0) return null;
+									return (
+										<div
+											key={color}
+											className="bg-gray-900/50 p-3 border rounded-lg"
+											style={{
+												borderColor: `${colors[color as keyof typeof colors].color}50`,
+											}}
+										>
+											<div className="flex justify-between items-center mb-1">
+												<span className="font-bold text-gray-400 text-xs uppercase">
+													{colors[color as keyof typeof colors].label}
+												</span>
+												<span className="text-2xl">
+													{colors[color as keyof typeof colors].symbol}
+												</span>
+											</div>
+											<div className="font-bold text-white text-sm">
+												Bet: ${amount}
+											</div>
+											<div
+												className="font-bold text-xs"
+												style={{
+													color: colors[color as keyof typeof colors].color,
+												}}
+											>
+												Win: ${potentialWins[color]} (×
+												{colors[color as keyof typeof colors].multiplier})
+											</div>
+										</div>
+									);
+								})}
+							</div>
+
+							{/* Total potential wins */}
+							<div className="mt-3 pt-3 border-blue-600/20 border-t">
+								<div className="flex justify-between items-center">
+									<span className="text-gray-400 text-sm">Possible Wins:</span>
+									<div className="text-right">
+										{Object.entries(potentialWins).map(([color, win]) => (
+											<div
+												key={color}
+												className="font-bold text-sm"
+												style={{
+													color: colors[color as keyof typeof colors].color,
+												}}
+											>
+												{colors[color as keyof typeof colors].label}: ${win}
+											</div>
+										))}
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				)}
 			</div>
 
 			{/* History Pills */}
