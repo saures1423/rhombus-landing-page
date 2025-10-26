@@ -58,6 +58,30 @@ const MinesGame = ({ user, socket, onShowProvablyFair }: MinesGameProps) => {
 
 	useEffect(() => {
 		// Socket event handlers
+
+		socket.emit('mines:getState', {});
+
+		// ===== Game State =====
+		const handleState = (data: any) => {
+			console.log('🎮 [mine:state] Game state:', data);
+
+			if (data) {
+				setMinesGame((prev) => ({
+					...prev,
+					gameId: data.gameId,
+					betAmount: data.betAmount,
+					minesCount: data.minesCount,
+					gridSize: data.gridSize,
+					isActive: data.isActive,
+					gameOver: data.gameOver,
+					revealedTiles: data.revealedTiles,
+					currentMultiplier: data.currentMultiplier,
+				}));
+			}
+		};
+
+		socket.on('mines:state', handleState);
+
 		socket.on('mines:started', (data: any) => {
 			console.log('💎 [mines:started] Game started:', data);
 			setMinesGame((prev) => ({
@@ -105,6 +129,7 @@ const MinesGame = ({ user, socket, onShowProvablyFair }: MinesGameProps) => {
 			socket.off('mines:tileRevealed');
 			socket.off('mines:result');
 			socket.off('mines:cashedOut');
+			socket.off('mine:state');
 		};
 	}, [socket]);
 
