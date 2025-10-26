@@ -31,7 +31,7 @@ const socket = io(`${socketUrl}/game`, {
 	},
 	reconnection: true,
 	reconnectionDelay: 1000,
-	reconnectionDelayMax: 5000,
+	reconnectionDelayMax: 3000,
 	reconnectionAttempts: 5,
 });
 
@@ -39,18 +39,18 @@ const Games = () => {
 	const [user, setUser] = useState<{
 		id: string;
 		username: string;
-		balance: number;
 	} | null>(null);
+
+	const [balance, setBalance] = useState(0);
 
 	const [activeGame, setActiveGame] = useState('mines');
 	const [history, setHistory] = useState<any[]>([]);
 	const [onlineUsers, setOnlineUsers] = useState(0);
 	const [isConnected, setIsConnected] = useState(false);
-	const [showModal, setShowModal] = useState(true);
-	const [formData, setFormData] = useState({
-		username: '',
-		initialBalance: 1000,
-	});
+	// const [showModal, setShowModal] = useState(true);
+	// const [formData, setFormData] = useState({
+	// 	username: '',
+	// });
 
 	const [showProvablyFair, setShowProvablyFair] = useState(false);
 	const [showBetVerification, setShowBetVerification] = useState(false);
@@ -69,17 +69,19 @@ const Games = () => {
 		socket.on('auth:success', (data: any) => {
 			console.log('Authenticated:', data);
 			setUser(data.user);
+			socket.emit('user:balance');
 			socket.emit('game:history', { limit: 50, skip: 0 });
 		});
 
 		socket.on('balance:update', (data: any) => {
 			console.log('💰 [balance:update] Received:', data);
-			setUser((prev) => {
-				if (!prev) return null;
-				return {
-					...prev,
-					balance: data.balance,
-				};
+
+			setBalance((prev) => {
+				const newBalance = data.balance;
+				if (prev !== newBalance) {
+					console.log(`🔄 Balance updated from ${prev} to ${newBalance}`);
+				}
+				return newBalance;
 			});
 		});
 
@@ -199,76 +201,85 @@ const Games = () => {
 	// 	]);
 	// };
 
-	const handleRegister = async () => {
-		if (!formData.username.trim()) {
-			alert('Please enter a username');
-			return;
-		}
+	// const handleRegister = async () => {
+	// 	if (!formData.username.trim()) {
+	// 		alert('Please enter a username');
+	// 		return;
+	// 	}
 
-		try {
-			const response = await fetch(`${socketUrl}/api/users/register`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ username: formData.username }),
-			});
+	// 	try {
+	// 		const response = await fetch(`${socketUrl}/api/users/register`, {
+	// 			method: 'POST',
+	// 			headers: { 'Content-Type': 'application/json' },
+	// 			body: JSON.stringify({ username: formData.username }),
+	// 		});
 
-			const data = await response.json();
+	// 		const data = await response.json();
 
-			if (!response.ok) {
-				alert(data.error || 'Failed to register');
-				return;
-			}
+	// 		if (!response.ok) {
+	// 			alert(data.error || 'Failed to register');
+	// 			return;
+	// 		}
 
-			const newUser = {
-				id: data.user.id,
-				username: data.user.username,
-				balance: data.user.balance,
-			};
+	// 		const newUser = {
+	// 			id: data.user.id,
+	// 			username: data.user.username,
+	// 			balance: data.balance,
+	// 		};
 
-			setUser(newUser);
-			setShowModal(false);
-			socket.emit('auth', { userId: newUser.id });
-		} catch (error) {
-			console.error('Register failed:', error);
-			alert('Something went wrong while registering.');
-		}
-	};
+	// 		setUser(newUser);
+	// 		setShowModal(false);
+	// 		socket.emit('auth', { userId: newUser.id });
+	// 	} catch (error) {
+	// 		console.error('Register failed:', error);
+	// 		alert('Something went wrong while registering.');
+	// 	}
+	// };
 
+	// if (!user) {
+	// 	return (
+	// 		<div className="flex justify-center items-center bg-gray-900 min-h-screen text-white">
+	// 			{showModal && (
+	// 				<div className="bg-gray-800 shadow-2xl p-6 border border-gray-700 rounded-xl w-full max-w-sm">
+	// 					<h2 className="mb-4 font-bold text-2xl text-center">
+	// 						Register to Play
+	// 					</h2>
+	// 					<div className="space-y-4">
+	// 						<div>
+	// 							<label className="block mb-2 text-gray-400 text-sm">
+	// 								Username
+	// 							</label>
+	// 							<input
+	// 								type="text"
+	// 								value={formData.username}
+	// 								onChange={(e) =>
+	// 									setFormData((prev) => ({
+	// 										...prev,
+	// 										username: e.target.value,
+	// 									}))
+	// 								}
+	// 								className="bg-gray-900 px-3 py-2 border border-gray-700 rounded w-full text-white"
+	// 								placeholder="Enter your name"
+	// 							/>
+	// 						</div>
+	// 						<button
+	// 							onClick={handleRegister}
+	// 							className="bg-green-600 hover:bg-green-700 py-2 rounded w-full font-bold transition"
+	// 						>
+	// 							Start Playing
+	// 						</button>
+	// 					</div>
+	// 				</div>
+	// 			)}
+	// 		</div>
+	// 	);
+	// }
+
+	// If no user, loading state
 	if (!user) {
 		return (
 			<div className="flex justify-center items-center bg-gray-900 min-h-screen text-white">
-				{showModal && (
-					<div className="bg-gray-800 shadow-2xl p-6 border border-gray-700 rounded-xl w-full max-w-sm">
-						<h2 className="mb-4 font-bold text-2xl text-center">
-							Register to Play
-						</h2>
-						<div className="space-y-4">
-							<div>
-								<label className="block mb-2 text-gray-400 text-sm">
-									Username
-								</label>
-								<input
-									type="text"
-									value={formData.username}
-									onChange={(e) =>
-										setFormData((prev) => ({
-											...prev,
-											username: e.target.value,
-										}))
-									}
-									className="bg-gray-900 px-3 py-2 border border-gray-700 rounded w-full text-white"
-									placeholder="Enter your name"
-								/>
-							</div>
-							<button
-								onClick={handleRegister}
-								className="bg-green-600 hover:bg-green-700 py-2 rounded w-full font-bold transition"
-							>
-								Start Playing
-							</button>
-						</div>
-					</div>
-				)}
+				<div>Loading... Fetching Data to Socket</div>
 			</div>
 		);
 	}
@@ -321,7 +332,7 @@ const Games = () => {
 					</div>
 					<div className="flex items-center gap-2 bg-green-600 px-4 py-2 rounded-lg">
 						<DollarSign size={20} />
-						<span className="font-bold text-xl">{user.balance.toFixed(2)}</span>
+						<span className="font-bold text-xl">{balance.toFixed(2)}</span>
 					</div>
 				</div>
 
@@ -369,16 +380,17 @@ const Games = () => {
 							<MinesGame
 								user={user}
 								socket={socket}
+								balance={balance}
 								onShowProvablyFair={() => setShowProvablyFair(true)}
 							/>
 						)}
 
 						{activeGame === 'coinflip' && (
-							<CoinflipGame user={user} socket={socket} />
+							<CoinflipGame user={user} balance={balance} socket={socket} />
 						)}
 
 						{activeGame === 'roulette' && (
-							<RouletteGame user={user} socket={socket} />
+							<RouletteGame user={user} balance={balance} socket={socket} />
 						)}
 					</div>
 

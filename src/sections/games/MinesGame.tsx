@@ -2,7 +2,8 @@ import { Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface MinesGameProps {
-	user: { id: string; username: string; balance: number };
+	user: { id: string; username: string };
+	balance: number;
 	socket: any;
 	onShowProvablyFair: () => void;
 }
@@ -31,10 +32,10 @@ const MinesGame = ({ user, socket, onShowProvablyFair }: MinesGameProps) => {
 	});
 
 	const startMinesGame = () => {
-		if (!user || user.balance < minesGame.betAmount) {
-			alert('Insufficient balance!');
-			return;
-		}
+		// if (!user || user.balance < minesGame.betAmount) {
+		// 	alert('Insufficient balance!');
+		// 	return;
+		// }
 		socket.emit('mines:start', {
 			userId: user.id,
 			betAmount: minesGame.betAmount,

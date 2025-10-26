@@ -2,11 +2,12 @@ import { useRouletteCountdown } from '@/hooks/useRouletteCountdown';
 import { useEffect, useState } from 'react';
 
 interface RouletteGameProps {
-	user: { id: string; username: string; balance: number };
+	user: { id: string; username: string };
+	balance: number;
 	socket: any;
 }
 
-const RouletteGame = ({ user, socket }: RouletteGameProps) => {
+const RouletteGame = ({ user, socket, balance }: RouletteGameProps) => {
 	const countdown = useRouletteCountdown(socket);
 
 	const [roulette, setRoulette] = useState<{
@@ -211,7 +212,7 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 		};
 		const newTotal = Object.values(newBets).reduce((a, b) => a + b, 0);
 
-		if (!user || user.balance < newTotal - totalBet) {
+		if (!user || balance < newTotal - totalBet) {
 			alert('Insufficient balance');
 			return;
 		}
@@ -670,10 +671,8 @@ const RouletteGame = ({ user, socket }: RouletteGameProps) => {
 						+$100
 					</button>
 					<button
-						onClick={() =>
-							addRouletteBet('black', Math.floor(user.balance / 4))
-						}
-						disabled={countdown.phase !== 'betting' || user.balance === 0}
+						onClick={() => addRouletteBet('black', Math.floor(balance / 4))}
+						disabled={countdown.phase !== 'betting' || balance === 0}
 						className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-2 py-2 rounded font-bold text-xs transition disabled:cursor-not-allowed bet-button"
 					>
 						MAX
