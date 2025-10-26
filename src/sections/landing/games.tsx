@@ -378,7 +378,6 @@ const Games = () => {
 						{/* Render Active Game Component */}
 						{activeGame === 'mines' && (
 							<MinesGame
-								user={user}
 								socket={socket}
 								balance={balance}
 								onShowProvablyFair={() => setShowProvablyFair(true)}
@@ -386,11 +385,11 @@ const Games = () => {
 						)}
 
 						{activeGame === 'coinflip' && (
-							<CoinflipGame user={user} balance={balance} socket={socket} />
+							<CoinflipGame balance={balance} socket={socket} />
 						)}
 
 						{activeGame === 'roulette' && (
-							<RouletteGame user={user} balance={balance} socket={socket} />
+							<RouletteGame balance={balance} socket={socket} />
 						)}
 					</div>
 

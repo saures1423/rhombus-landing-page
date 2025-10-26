@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 
 interface CoinflipGameProps {
-	user: { id: string; username: string };
 	balance: number;
 	socket: any;
 }
 
 type CoinSide = 'heads' | 'tails';
 
-const CoinflipGame = ({ user, socket, balance }: CoinflipGameProps) => {
+const CoinflipGame = ({ socket, balance }: CoinflipGameProps) => {
 	// Bet controls
 	const [betAmount, setBetAmount] = useState(1);
 	const [choice, setChoice] = useState<CoinSide>('heads');

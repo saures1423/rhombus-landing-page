@@ -2,13 +2,12 @@ import { Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface MinesGameProps {
-	user: { id: string; username: string };
 	balance: number;
 	socket: any;
 	onShowProvablyFair: () => void;
 }
 
-const MinesGame = ({ user, socket, onShowProvablyFair }: MinesGameProps) => {
+const MinesGame = ({ socket, onShowProvablyFair }: MinesGameProps) => {
 	const [minesGame, setMinesGame] = useState<{
 		gameId: string | null;
 		betAmount: number;
@@ -37,7 +36,6 @@ const MinesGame = ({ user, socket, onShowProvablyFair }: MinesGameProps) => {
 		// 	return;
 		// }
 		socket.emit('mines:start', {
-			userId: user.id,
 			betAmount: minesGame.betAmount,
 			minesCount: minesGame.minesCount,
 			gridSize: minesGame.gridSize,
