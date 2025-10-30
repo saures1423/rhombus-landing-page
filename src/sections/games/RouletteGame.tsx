@@ -27,6 +27,8 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 		animationKey: 0,
 	});
 
+	const [betInputAmount, setBetInputAmount] = useState<string>('1');
+
 	const colors = {
 		black: { label: 'BLACK', multiplier: 2, color: '#4a4a4a', symbol: '♠' },
 		gold: { label: 'GOLD', multiplier: 14, color: '#d4af37', symbol: '⚡' },
@@ -179,6 +181,8 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 				animationKey: 0,
 			});
 		};
+
+		socket.emit('roulette:getHistory');
 
 		socket.on('roulette:gameStarting', handleGameStarting);
 		socket.on('roulette:betConfirmed', handleBetConfirmed);
@@ -465,10 +469,104 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 		}
 	`;
 
+	function handleBetInputChange(value: string): void {
+		// Allow only numbers and a single decimal point
+		if (/^\d*\.?\d*$/.test(value)) {
+			setBetInputAmount(value);
+		}
+	}
+
 	return (
 		<div className="space-y-4">
 			<style>{wheelStyles}</style>
 
+			<div className="flex flex-wrap justify-between items-center gap-4 bg-gray-800/50 backdrop-blur p-4 border border-gray-700 rounded-lg">
+				{/* Bet Amount */}
+				<div className="flex items-center gap-3">
+					<span className="font-semibold text-gray-400 text-sm">
+						Bet Amount
+					</span>
+					<div className="flex items-center gap-2 bg-gray-900/70 px-4 py-2 border border-gray-600 rounded-lg">
+						<span className="text-gray-500">₱</span>
+						<input
+							type="text"
+							value={betInputAmount}
+							onChange={(e) => handleBetInputChange(e.target.value)}
+							onBlur={() => {
+								const amount = Number.parseFloat(betInputAmount) || 0;
+								setBetInputAmount(amount.toFixed(2));
+							}}
+							disabled={countdown.phase !== 'betting'}
+							className="bg-transparent disabled:opacity-50 outline-none w-24 font-bold text-white text-lg"
+							placeholder="0.00"
+						/>
+					</div>
+					<div className="flex gap-2">
+						<button
+							onClick={() => {
+								const currentAmount = Number.parseFloat(betInputAmount) || 0;
+								const halfAmount = currentAmount / 2;
+								setBetInputAmount(halfAmount.toFixed(2));
+							}}
+							disabled={
+								countdown.phase !== 'betting' ||
+								Number.parseFloat(betInputAmount) === 0
+							}
+							className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-3 py-2 rounded font-bold text-xs transition disabled:cursor-not-allowed"
+						>
+							1/2
+						</button>
+						<button
+							onClick={() => {
+								const currentAmount = Number.parseFloat(betInputAmount) || 0;
+								const doubleAmount = Math.min(currentAmount * 2, balance);
+								setBetInputAmount(doubleAmount.toFixed(2));
+							}}
+							disabled={
+								countdown.phase !== 'betting' ||
+								Number.parseFloat(betInputAmount) === 0
+							}
+							className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-3 py-2 rounded font-bold text-xs transition disabled:cursor-not-allowed"
+						>
+							2X
+						</button>
+						<button
+							onClick={() => {
+								setBetInputAmount(balance.toFixed(2));
+							}}
+							disabled={countdown.phase !== 'betting' || balance === 0}
+							className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-3 py-2 rounded font-bold text-xs transition disabled:cursor-not-allowed"
+						>
+							Max
+						</button>
+					</div>
+				</div>
+
+				{/* Last 100 Results */}
+				<div className="flex items-center gap-3">
+					<span className="font-semibold text-gray-400 text-sm">Last 100</span>
+					<div className="flex gap-3">
+						{Object.entries(colors).map(([colorKey, colorData]) => {
+							const count = roulette.history
+								.slice(0, 100)
+								.filter((c) => c === colorKey).length;
+							return (
+								<div key={colorKey} className="flex items-center gap-2">
+									<div
+										className="flex justify-center items-center rounded-full w-6 h-6 font-bold text-sm"
+										style={{ backgroundColor: colorData.color }}
+									>
+										{count}
+									</div>
+									<span className="font-bold text-white text-sm">
+										{colorData.symbol}
+									</span>
+								</div>
+							);
+						})}
+					</div>
+				</div>
+			</div>
 			{/* Wheel Display */}
 			<div className="bg-gray-800/50 backdrop-blur p-4 border border-gray-700 rounded-lg">
 				<div className="mb-4 text-gray-500 text-sm text-center">
@@ -623,10 +721,10 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 			</div>
 
 			{/* History Pills */}
-			{/* {roulette.history.length > 0 && (
+			{roulette.history.length > 0 && (
 				<div className="pt-4 border-gray-700 border-t">
-					<div className="mb-3 font-bold text-gray-300 text-sm uppercase tracking-wider">
-						Last 10 Results
+					<div className="mb-3 font-extrabold text-gray-800 text-md uppercase tracking-wider">
+						Last 10 Previous Rolls
 					</div>
 					<div className="flex gap-2 pb-2 overflow-x-auto">
 						{roulette.history.slice(0, 10).map((historyColor, idx) => (
@@ -644,7 +742,7 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 						))}
 					</div>
 				</div>
-			)} */}
+			)}
 
 			{/* Betting Controls */}
 			<div className="space-y-4 bg-gray-800/50 backdrop-blur p-4 border border-gray-700 rounded-lg">
