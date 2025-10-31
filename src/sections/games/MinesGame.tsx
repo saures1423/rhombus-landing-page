@@ -121,6 +121,7 @@ const MinesGame = ({ socket, onShowProvablyFair }: MinesGameProps) => {
 				minePositions: data.minePositions,
 			}));
 		});
+
 		return () => {
 			// Cleanup socket event handlers
 			socket.off('mines:started');

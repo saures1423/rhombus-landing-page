@@ -8,26 +8,27 @@ interface RouletteGameProps {
 
 const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 	const countdown = useRouletteCountdown(socket);
+	console.log('🚀 ~ RouletteGame ~ countdown:', countdown);
 
 	const [roulette, setRoulette] = useState<{
-		bets: Record<string, number>;
-		placedBets: Record<string, number> | null;
 		result: string | null;
 		wheelOffset: number;
 		isSpinning: boolean;
 		history: string[];
 		animationKey: number;
+		placedBets: Record<string, number>;
 	}>({
-		bets: { black: 0, gold: 0, blue: 0, bait: 0 },
-		placedBets: null,
 		result: null,
 		wheelOffset: 0,
 		isSpinning: false,
 		history: [],
 		animationKey: 0,
+		placedBets: {},
 	});
 
-	const [betInputAmount, setBetInputAmount] = useState<string>('1');
+	const [betPlacedLoading, setBetPlacedLoading] = useState<boolean>(false);
+
+	const [betInputAmount, setBetInputAmount] = useState<number>(1);
 
 	const colors = {
 		black: { label: 'BLACK', multiplier: 2, color: '#4a4a4a', symbol: '♠' },
@@ -48,8 +49,6 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 		'black',
 		'blue',
 	];
-
-	const totalBet = Object.values(roulette.bets).reduce((a, b) => a + b, 0);
 
 	const placedTotalBet = roulette.placedBets
 		? Object.values(roulette.placedBets).reduce((a, b) => a + b, 0)
@@ -90,11 +89,10 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 
 		const handleBetConfirmed = (data: any) => {
 			console.log('✅ Bet Confirmed successfully', data);
-			setRoulette((prev) => ({
-				...prev,
-				placedBets: { ...prev.bets },
-				bets: { black: 0, gold: 0, blue: 0, bait: 0 },
-			}));
+
+			if (data.success) {
+				setBetPlacedLoading(false);
+			}
 		};
 
 		const handleRolling = (data: any) => {
@@ -172,20 +170,24 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 		const handleGameStopped = (data: any) => {
 			console.log('🛑 Game stopped:', data);
 			setRoulette({
-				bets: { black: 0, gold: 0, blue: 0, bait: 0 },
-				placedBets: null,
 				result: null,
 				wheelOffset: 0,
 				isSpinning: false,
 				history: [],
 				animationKey: 0,
+				placedBets: null,
 			});
+		};
+
+		const handleBetPlaced = (data: any) => {
+			console.log('💵 Bet placed:', data);
 		};
 
 		socket.emit('roulette:getHistory');
 
 		socket.on('roulette:gameStarting', handleGameStarting);
 		socket.on('roulette:betConfirmed', handleBetConfirmed);
+		socket.on('roulette:betPlaced', handleBetPlaced);
 		socket.on('roulette:rolling', handleRolling);
 		socket.on('roulette:result', handleResult);
 		socket.on('roulette:history', handleHistory);
@@ -193,63 +195,63 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 		socket.on('roulette:gameStopped', handleGameStopped);
 
 		return () => {
-			socket.off('roulette:gameStarting', handleGameStarting);
-			socket.off('roulette:betConfirmed', handleBetConfirmed);
-			socket.off('roulette:rolling', handleRolling);
-			socket.off('roulette:result', handleResult);
-			socket.off('roulette:history', handleHistory);
-			socket.off('roulette:noBets', handleNoBets);
-			socket.off('roulette:gameStopped', handleGameStopped);
+			socket.off('roulette:gameStarting');
+			socket.off('roulette:betConfirmed');
+			socket.off('roulette:rolling');
+			socket.off('roulette:result');
+			socket.off('roulette:history');
+			socket.off('roulette:noBets');
+			socket.off('roulette:gameStopped');
+			socket.off('roulette:betPlaced');
 		};
 	}, [socket]);
 
-	const addRouletteBet = (color: string, amount: number) => {
+	const placeBetOnColor = (color: string) => {
+		const betAmount = betInputAmount;
+
+		// === Basic validation ===
+		if (betAmount <= 0) {
+			alert('Please enter a valid bet amount');
+			return;
+		}
+
 		if (countdown.phase !== 'betting') {
 			alert('Can only bet during betting phase');
 			return;
 		}
 
+		// === Compute new total ===
 		const newBets = {
-			...roulette.bets,
-			[color]: roulette.bets[color as keyof typeof roulette.bets] + amount,
+			...(roulette.placedBets || {}),
+			[color]: (roulette.placedBets?.[color] || 0) + betAmount,
 		};
+
 		const newTotal = Object.values(newBets).reduce((a, b) => a + b, 0);
 
-		if (balance < newTotal - totalBet) {
+		// === Check balance ===
+		if (balance < newTotal) {
 			alert('Insufficient balance');
 			return;
 		}
 
-		setRoulette((prev) => ({ ...prev, bets: newBets }));
-	};
-
-	const placeBet = () => {
-		if (totalBet === 0) {
-			alert('Please place a bet first');
-			return;
-		}
-
-		if (countdown.phase !== 'betting') {
-			alert('Can only place bets during betting phase');
-			return;
-		}
-
+		// === Emit to server ===
 		socket.emit('roulette:bet', {
-			betAmount: totalBet,
-			selectedColors: roulette.bets,
+			betAmount,
+			selectedColors: { [color]: betAmount },
 		});
 
 		console.log('📤 Bet placed:', {
-			betAmount: totalBet,
-			selectedColors: roulette.bets,
+			betAmount,
+			selectedColors: { [color]: betAmount },
 		});
-	};
 
-	const clearBets = () => {
+		// === Optimistic UI update ===
 		setRoulette((prev) => ({
 			...prev,
-			bets: { black: 0, gold: 0, blue: 0, bait: 0 },
+			placedBets: newBets,
 		}));
+
+		setBetPlacedLoading(true);
 	};
 
 	const getPhaseDisplay = () => {
@@ -442,19 +444,6 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 			75% { transform: scale(1.05) rotate(2deg); }
 		}
 
-		.bet-button {
-			transition: all 0.2s ease;
-		}
-
-		.bet-button:hover:not(:disabled) {
-			transform: translateY(-2px);
-			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-		}
-
-		.bet-button:active:not(:disabled) {
-			transform: translateY(0);
-		}
-
 		.color-bet-card {
 			transition: all 0.2s ease;
 			cursor: pointer;
@@ -471,8 +460,16 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 
 	function handleBetInputChange(value: string): void {
 		// Allow only numbers and a single decimal point
-		if (/^\d*\.?\d*$/.test(value)) {
-			setBetInputAmount(value);
+		// handle input change
+		const regex = /^\d*\.?\d*$/;
+		if (value === '' || regex.test(value)) {
+			const numericValue = Number.parseFloat(value);
+			// biome-ignore lint/suspicious/noGlobalIsNan: <explanation>
+			if (isNaN(numericValue)) {
+				setBetInputAmount(0);
+			} else {
+				setBetInputAmount(numericValue);
+			}
 		}
 	}
 
@@ -493,8 +490,8 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 							value={betInputAmount}
 							onChange={(e) => handleBetInputChange(e.target.value)}
 							onBlur={() => {
-								const amount = Number.parseFloat(betInputAmount) || 0;
-								setBetInputAmount(amount.toFixed(2));
+								const amount = betInputAmount;
+								setBetInputAmount(amount);
 							}}
 							disabled={countdown.phase !== 'betting'}
 							className="bg-transparent disabled:opacity-50 outline-none w-24 font-bold text-white text-lg"
@@ -504,35 +501,29 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 					<div className="flex gap-2">
 						<button
 							onClick={() => {
-								const currentAmount = Number.parseFloat(betInputAmount) || 0;
+								const currentAmount = betInputAmount;
 								const halfAmount = currentAmount / 2;
-								setBetInputAmount(halfAmount.toFixed(2));
+								setBetInputAmount(halfAmount);
 							}}
-							disabled={
-								countdown.phase !== 'betting' ||
-								Number.parseFloat(betInputAmount) === 0
-							}
+							disabled={countdown.phase !== 'betting' || betInputAmount === 0}
 							className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-3 py-2 rounded font-bold text-xs transition disabled:cursor-not-allowed"
 						>
 							1/2
 						</button>
 						<button
 							onClick={() => {
-								const currentAmount = Number.parseFloat(betInputAmount) || 0;
+								const currentAmount = betInputAmount;
 								const doubleAmount = Math.min(currentAmount * 2, balance);
-								setBetInputAmount(doubleAmount.toFixed(2));
+								setBetInputAmount(doubleAmount);
 							}}
-							disabled={
-								countdown.phase !== 'betting' ||
-								Number.parseFloat(betInputAmount) === 0
-							}
+							disabled={countdown.phase !== 'betting' || betInputAmount === 0}
 							className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-3 py-2 rounded font-bold text-xs transition disabled:cursor-not-allowed"
 						>
 							2X
 						</button>
 						<button
 							onClick={() => {
-								setBetInputAmount(balance.toFixed(2));
+								setBetInputAmount(balance);
 							}}
 							disabled={countdown.phase !== 'betting' || balance === 0}
 							className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-3 py-2 rounded font-bold text-xs transition disabled:cursor-not-allowed"
@@ -567,6 +558,7 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 					</div>
 				</div>
 			</div>
+
 			{/* Wheel Display */}
 			<div className="bg-gray-800/50 backdrop-blur p-4 border border-gray-700 rounded-lg">
 				<div className="mb-4 text-gray-500 text-sm text-center">
@@ -646,16 +638,6 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 								}`}
 							>
 								{countdown.timeLeft}s
-							</div>
-						</div>
-					)}
-
-					{/* Current Bet Display */}
-					{totalBet > 0 && (
-						<div className="bg-green-600/20 px-4 py-2 border border-green-600 rounded-lg">
-							<div className="mb-1 text-green-400 text-xs">Your Bet</div>
-							<div className="font-bold text-green-400 text-2xl">
-								${totalBet}
 							</div>
 						</div>
 					)}
@@ -746,51 +728,48 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 
 			{/* Betting Controls */}
 			<div className="space-y-4 bg-gray-800/50 backdrop-blur p-4 border border-gray-700 rounded-lg">
-				{/* Quick Bet Buttons */}
-				<div className="gap-2 grid grid-cols-4">
-					<button
-						onClick={() => addRouletteBet('black', 10)}
-						disabled={countdown.phase !== 'betting'}
-						className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-2 py-2 rounded font-bold text-xs transition disabled:cursor-not-allowed bet-button"
-					>
-						+$10
-					</button>
-					<button
-						onClick={() => addRouletteBet('black', 100)}
-						disabled={countdown.phase !== 'betting'}
-						className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-2 py-2 rounded font-bold text-xs transition disabled:cursor-not-allowed bet-button"
-					>
-						+$100
-					</button>
-					<button
-						onClick={() => addRouletteBet('black', Math.floor(balance / 4))}
-						disabled={countdown.phase !== 'betting' || balance === 0}
-						className="bg-gray-700/50 hover:bg-gray-600 disabled:opacity-50 px-2 py-2 rounded font-bold text-xs transition disabled:cursor-not-allowed bet-button"
-					>
-						MAX
-					</button>
-					<button
-						onClick={clearBets}
-						disabled={countdown.phase !== 'betting'}
-						className="bg-red-700/50 hover:bg-red-600 disabled:opacity-50 px-2 py-2 rounded font-bold text-xs transition disabled:cursor-not-allowed bet-button"
-					>
-						CLEAR
-					</button>
-				</div>
-
-				{/* Color Buttons */}
+				{/* Color Buttons - Direct Betting */}
 				<div className="gap-2 grid grid-cols-2 md:grid-cols-4">
 					{Object.entries(colors).map(([colorKey, colorData]) => (
 						<button
 							key={colorKey}
-							onClick={() => addRouletteBet(colorKey, 1)}
-							disabled={countdown.phase !== 'betting'}
+							onClick={() => placeBetOnColor(colorKey)}
+							disabled={
+								countdown.phase !== 'betting' ||
+								betInputAmount <= 0 ||
+								betPlacedLoading
+							}
 							className="disabled:opacity-50 p-4 border-2 rounded-lg transition disabled:cursor-not-allowed color-bet-card"
 							style={{
 								backgroundColor: `${colorData.color}30`,
 								borderColor: colorData.color,
 							}}
 						>
+							{betPlacedLoading && (
+								<div className="absolute inset-0 flex justify-center items-center bg-black/40 rounded-lg">
+									{/* biome-ignore lint/a11y/noSvgWithoutTitle: <> */}
+									<svg
+										className="w-6 h-6 text-yellow-400 animate-spin"
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+									>
+										<circle
+											className="opacity-25"
+											cx="12"
+											cy="12"
+											r="10"
+											stroke="currentColor"
+											strokeWidth="4"
+										/>
+										<path
+											className="opacity-75"
+											fill="currentColor"
+											d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+										/>
+									</svg>
+								</div>
+							)}
 							<div className="mb-2 text-3xl">{colorData.symbol}</div>
 							<div className="mb-1 font-bold text-gray-300 text-xs">
 								{colorData.label}
@@ -798,21 +777,10 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 							<div className="mb-1 text-gray-400 text-xs">
 								×{colorData.multiplier}
 							</div>
-							<div className="font-bold text-yellow-400">
-								${roulette.bets[colorKey as keyof typeof roulette.bets]}
-							</div>
+							<div className="font-bold text-yellow-400">${betInputAmount}</div>
 						</button>
 					))}
 				</div>
-
-				{/* Place Bet Button */}
-				<button
-					onClick={placeBet}
-					disabled={countdown.phase !== 'betting' || totalBet === 0}
-					className="bg-gradient-to-r from-green-600 hover:from-green-500 disabled:from-gray-600 to-green-500 hover:to-green-400 disabled:to-gray-600 disabled:opacity-50 shadow-lg hover:shadow-green-500/50 py-4 rounded-lg w-full font-bold text-lg transition-all disabled:cursor-not-allowed"
-				>
-					{totalBet > 0 ? `PLACE BET - $${totalBet}` : 'SELECT YOUR BETS'}
-				</button>
 			</div>
 		</div>
 	);
