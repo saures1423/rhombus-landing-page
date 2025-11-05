@@ -29,6 +29,7 @@ const socket = io(`${socketUrl}/game`, {
 		'x-api-key':
 			'sk_ceed97507cef15baa5ec0b9a64eb36f01cdbe6ed2d47a25558fdd712ef08903e',
 	},
+	path: '/socket.io',
 	reconnection: true,
 	reconnectionDelay: 1000,
 	reconnectionDelayMax: 3000,

@@ -8,7 +8,6 @@ interface RouletteGameProps {
 
 const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 	const countdown = useRouletteCountdown(socket);
-	console.log('🚀 ~ RouletteGame ~ countdown:', countdown);
 
 	const [roulette, setRoulette] = useState<{
 		result: string | null;
@@ -27,7 +26,7 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 	});
 
 	const [betPlacedLoading, setBetPlacedLoading] = useState<boolean>(false);
-
+	const [removingBet, setRemovingBet] = useState<boolean>(false);
 	const [betInputAmount, setBetInputAmount] = useState<number>(1);
 
 	const colors = {
@@ -75,6 +74,22 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 		// SOCKET EVENT HANDLERS
 		// ============================================
 
+		// emit this get the userbet if exist
+		socket.emit('roulette:getUserBet', {});
+
+		socket.on('roulette:userBet', (data: any) => {
+			if (!data?.success || !data?.bet) return;
+
+			const { bet } = data;
+
+			setRoulette((prev) => ({
+				...prev,
+				placedBets: bet.selectedColors,
+			}));
+
+			console.log('🎯 Synced bet from server:', bet);
+		});
+
 		const handleGameStarting = (data: any) => {
 			console.log('🎲 Game starting:', data);
 			setRoulette((prev) => ({
@@ -92,6 +107,19 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 
 			if (data.success) {
 				setBetPlacedLoading(false);
+			}
+		};
+
+		const handleBetRemoved = (data: any) => {
+			console.log('Bet removed:', data);
+
+			if (data.success) {
+				setRemovingBet(false);
+
+				setRoulette((prev) => ({
+					...prev,
+					placedBets: {},
+				}));
 			}
 		};
 
@@ -187,6 +215,7 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 
 		socket.on('roulette:gameStarting', handleGameStarting);
 		socket.on('roulette:betConfirmed', handleBetConfirmed);
+		socket.on('roulette:betRemoved', handleBetRemoved);
 		socket.on('roulette:betPlaced', handleBetPlaced);
 		socket.on('roulette:rolling', handleRolling);
 		socket.on('roulette:result', handleResult);
@@ -203,6 +232,8 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 			socket.off('roulette:noBets');
 			socket.off('roulette:gameStopped');
 			socket.off('roulette:betPlaced');
+			socket.off('roulette:betRemoved');
+			socket.off('roulette:userBet');
 		};
 	}, [socket]);
 
@@ -252,6 +283,24 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 		}));
 
 		setBetPlacedLoading(true);
+	};
+
+	const removeAllBets = () => {
+		if (countdown.phase !== 'betting') {
+			alert('Can only remove bets during betting phase');
+			return;
+		}
+
+		if (placedTotalBet === 0) {
+			alert('No bets to remove');
+			return;
+		}
+
+		setRemovingBet(true);
+
+		socket.emit('roulette:removeBet', {});
+
+		console.log('Removing all bets');
 	};
 
 	const getPhaseDisplay = () => {
@@ -660,6 +709,16 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 							<div className="flex justify-between items-center mb-3 font-bold text-blue-400 text-sm">
 								<span>💰 Your Active Bets</span>
 								<span className="text-blue-300">${placedTotalBet} Total</span>
+
+								{countdown.phase === 'betting' && (
+									<button
+										onClick={removeAllBets}
+										disabled={removingBet}
+										className="bg-red-600 hover:bg-red-700 disabled:opacity-50 px-3 py-1 rounded font-bold text-white text-xs transition disabled:cursor-not-allowed"
+									>
+										{removingBet ? 'Removing...' : '🗑️ Clear All'}
+									</button>
+								)}
 							</div>
 
 							<div className="gap-2 grid grid-cols-2 md:grid-cols-4">
