@@ -3,7 +3,17 @@ import { Button } from '@/components/ui/button';
 import { Link } from '@tanstack/react-router';
 import { ArrowRight, Check, Star, TrendingUp } from 'lucide-react';
 
+import Intercom from '@intercom/messenger-js-sdk';
+
 export default function HeroSection() {
+	Intercom({
+		app_id: 'wtjg663i',
+		user_id: '121212', // IMPORTANT: Replace "user.id" with the variable you use to capture the user's ID
+		name: 'Leslie Ko', // IMPORTANT: Replace "user.name" with the variable you use to capture the user's name
+		email: 'test@gmail.com', // IMPORTANT: Replace "user.email" with the variable you use to capture the user's email
+		created_at: 1704067200, // IMPORTANT: Replace "user.createdAt" with the variable you use to capture the user's sign-up date in a Unix timestamp (in seconds) e.g. 1704067200
+	});
+
 	return (
 		<section className="relative bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 py-12 md:py-24 lg:py-32 xl:py-48 w-full overflow-hidden">
 			{/* Background Pattern */}

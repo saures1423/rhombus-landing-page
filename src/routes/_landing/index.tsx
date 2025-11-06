@@ -16,7 +16,8 @@ function App() {
 	return (
 		<>
 			<Games />
-			{/* <FeatureSection />
+			{/* <HeroSection />
+			<FeatureSection />
 			<TestimonialSection />
 			<CTASection />
 			<PricingSection /> */}

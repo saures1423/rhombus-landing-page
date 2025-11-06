@@ -16,6 +16,7 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 		history: string[];
 		animationKey: number;
 		placedBets: Record<string, number>;
+		earlyResult: string | null; // NEW: Store early result
 	}>({
 		result: null,
 		wheelOffset: 0,
@@ -23,6 +24,7 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 		history: [],
 		animationKey: 0,
 		placedBets: {},
+		earlyResult: null, // NEW
 	});
 
 	const [betPlacedLoading, setBetPlacedLoading] = useState<boolean>(false);
@@ -95,6 +97,7 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 			setRoulette((prev) => ({
 				...prev,
 				result: null,
+				earlyResult: null, // Reset early result
 				isSpinning: false,
 				wheelOffset: 0,
 				placedBets: null,
@@ -125,57 +128,85 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 
 		const handleRolling = (data: any) => {
 			console.log('🎰 Rolling started:', data);
+
+			// Reset state and prepare for spinning
 			setRoulette((prev) => ({
 				...prev,
 				isSpinning: true,
 				wheelOffset: 0,
 				result: null,
-				animationKey: prev.animationKey + 1,
+				earlyResult: null,
+				// animationKey: prev.animationKey + 1,
 			}));
 
-			setTimeout(() => {
-				setRoulette((prev) => {
+			// Start the initial fast spin immediately after state updates
+			// Use requestAnimationFrame to ensure state update has been applied
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
 					const itemWidth = 128;
 					const loopOffset = itemWidth * colorSequence.length * 6;
-					return {
+
+					setRoulette((prev) => ({
 						...prev,
 						wheelOffset: loopOffset,
-					};
+					}));
 				});
-			}, 100);
+			});
 		};
 
-		const handleResult = (data: any) => {
-			console.log('✨ Result received:', data);
+		// NEW HANDLER: Early result (received at 10s mark)
+		const handleEarlyResult = (data: any) => {
+			console.log('🎯 Early result received (10s mark):', data);
 
-			setTimeout(() => {
-				const itemWidth = 128;
-				const winningIndex = colorSequence.indexOf(data.winningColor);
+			const itemWidth = 128;
+			const winningIndex = colorSequence.indexOf(data.winningColor);
 
-				if (winningIndex === -1) {
-					console.error('Invalid winning color:', data.winningColor);
-					return;
-				}
+			if (winningIndex === -1) {
+				console.error('Invalid winning color:', data.winningColor);
+				return;
+			}
 
-				const fullLoops = 5;
-				const middleSequenceStart = 3;
-				const centerOffset = 64;
+			const fullLoops = 5;
+			const middleSequenceStart = 3;
+			const centerOffset = 64;
 
-				const finalOffset =
-					(fullLoops * colorSequence.length +
-						middleSequenceStart * colorSequence.length +
-						winningIndex) *
-						itemWidth +
-					centerOffset;
+			const finalOffset =
+				(fullLoops * colorSequence.length +
+					middleSequenceStart * colorSequence.length +
+					winningIndex) *
+					itemWidth +
+				centerOffset;
 
+			// First, set the early result (this changes the CSS class)
+			setRoulette((prev) => ({
+				...prev,
+				isSpinning: true,
+				earlyResult: data.winningColor,
+			}));
+
+			// Then, apply the new offset after the class change has been rendered
+			// This ensures the 'landing' transition is active when offset changes
+			requestAnimationFrame(() => {
 				setRoulette((prev) => ({
 					...prev,
-					isSpinning: false,
 					wheelOffset: finalOffset,
-					result: data.winningColor,
-					history: [data.winningColor, ...prev.history.slice(0, 99)],
 				}));
-			}, 300);
+			});
+
+			console.log('🎯 Landing animation started toward:', data.winningColor);
+		};
+
+		// MODIFIED HANDLER: Final result (received at 15s mark)
+		const handleResult = (data: any) => {
+			console.log('✨ Final result received (15s mark):', data);
+
+			// By now the wheel should have landed, just update state
+			setRoulette((prev) => ({
+				...prev,
+				isSpinning: false,
+				result: data.winningColor,
+				history: [data.winningColor, ...prev.history.slice(0, 99)],
+			}));
 		};
 
 		const handleHistory = (data: any) => {
@@ -204,6 +235,7 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 				history: [],
 				animationKey: 0,
 				placedBets: null,
+				earlyResult: null,
 			});
 		};
 
@@ -218,6 +250,7 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 		socket.on('roulette:betRemoved', handleBetRemoved);
 		socket.on('roulette:betPlaced', handleBetPlaced);
 		socket.on('roulette:rolling', handleRolling);
+		socket.on('roulette:earlyResult', handleEarlyResult); // NEW
 		socket.on('roulette:result', handleResult);
 		socket.on('roulette:history', handleHistory);
 		socket.on('roulette:noBets', handleNoBets);
@@ -227,6 +260,7 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 			socket.off('roulette:gameStarting');
 			socket.off('roulette:betConfirmed');
 			socket.off('roulette:rolling');
+			socket.off('roulette:earlyResult'); // NEW
 			socket.off('roulette:result');
 			socket.off('roulette:history');
 			socket.off('roulette:noBets');
@@ -311,6 +345,13 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 					className: 'phase-betting',
 				};
 			case 'rolling':
+				// Show different message if we know the result
+				if (roulette.earlyResult) {
+					return {
+						text: 'Landing to . . .',
+						className: 'phase-rolling',
+					};
+				}
 				return {
 					text: '🎰 Spinning...',
 					className: 'phase-rolling',
@@ -367,12 +408,18 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 			will-change: transform;
 		}
 		
+
+
 		.wheel.spinning {
-			transition: transform 5s linear;
+			animation: continuous-spin 3s linear infinite;
+		}
+		
+		.wheel.landing {
+			transition: transform 5s cubic-bezier(0.15, 0.5, 0.2, 1);
 		}
 		
 		.wheel.stopped {
-			transition: transform 3s cubic-bezier(0.15, 0.5, 0.2, 1);
+			transition: none;
 		}
 		
 		.wheel-item {
@@ -445,7 +492,8 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 			}
 		}
 
-		.wheel.spinning ~ .center-indicator {
+		.wheel.spinning ~ .center-indicator,
+		.wheel.landing ~ .center-indicator {
 			animation: pulse-glow 1s ease-in-out infinite;
 		}
 
@@ -493,6 +541,11 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 			75% { transform: scale(1.05) rotate(2deg); }
 		}
 
+		@keyframes continuous-spin {
+  			0% { transform: translateX(0); }
+  			100% { transform: translateX(-1280px); } /* 128 * 10 (your color sequence) */
+		}
+
 		.color-bet-card {
 			transition: all 0.2s ease;
 			cursor: pointer;
@@ -521,6 +574,13 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 			}
 		}
 	}
+
+	// Determine wheel animation class based on state
+	const getWheelClass = () => {
+		if (roulette.earlyResult) return 'landing';
+		if (roulette.isSpinning) return 'spinning';
+		return 'stopped';
+	};
 
 	return (
 		<div className="space-y-4">
@@ -627,12 +687,12 @@ const RouletteGame = ({ socket, balance }: RouletteGameProps) => {
 					<div className="wheel-wrapper">
 						<div
 							key={roulette.animationKey}
-							className={`wheel ${roulette.isSpinning ? 'spinning' : 'stopped'}`}
+							className={`wheel ${getWheelClass()}`}
 							style={{
 								transform: `translateX(-${roulette.wheelOffset}px)`,
 							}}
 						>
-							{Array.from({ length: 10 }, (_, setIndex) =>
+							{Array.from({ length: 50 }, (_, setIndex) =>
 								colorSequence.map((color, idx) => (
 									<div
 										key={`${setIndex}-${color}-${idx}`}
